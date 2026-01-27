@@ -1,11 +1,28 @@
 -- shared.lua
 if SERVER then
+	-- add my files
 	AddCSLuaFile()
+	AddCSLuaFile("cl_damage_numbers.lua")
+	AddCSLuaFile("cl_hud.lua")
+	AddCSLuaFile("cl_camera.lua")
+	
+	-- add fonts
+	resource.AddFile("resource/fonts/TF2.ttf")
+	
+	-- add network strings
+	util.AddNetworkString("mw_damage_number")
+end
+
+if CLIENT then
+	-- give clients certain files
+	include("cl_damage_numbers.lua")
+	include("cl_hud.lua")
+	include("cl_camera.lua")
 end
 
 SWEP.PrintName = "Base Weapon"
 SWEP.Category = "Milkwater"
-SWEP.Spawnable = true
+SWEP.Spawnable = false
 SWEP.AdminSpawnable = true
 
 SWEP.UseFPArms = true
@@ -16,6 +33,7 @@ SWEP.HoldType = "pistol"
 SWEP.PrimaryAnim = ACT_VM_PRIMARYATTACK
 SWEP.SoundShootPrimary = "Weapon_Pistol.Empty"
 SWEP.Casing = "ShellEject"
+SWEP.Caseless = false
 
 SWEP.Primary.ClipSize = 12
 SWEP.Primary.DefaultClip = 12
@@ -42,8 +60,10 @@ local function MW_Using3PBase(ply)
     return IsValid(wep) and wep.Base == "milkwaters_3p_base"
 end
 
-local function MW_GetFPCamera(ply)
+-- get exact camera position
+function MW_GetFPCamera(ply)
 	local head = ply:LookupBone("ValveBiped.Bip01_Head1")
+	
 	if head then
 		local matrix = ply:GetBoneMatrix(head)
 		local pos = matrix:GetTranslation()
@@ -108,12 +128,10 @@ function SWEP:PrimaryAttack()
     end
 
     -- recoil
-    if game.SinglePlayer() then
+    if SERVER then
+        self:CallOnClient("DoRecoil")
+    elseif CLIENT and IsFirstTimePredicted() then
         self:DoRecoil()
-    else
-        if CLIENT and IsFirstTimePredicted() then
-            self:DoRecoil()
-        end
     end
 
     -- muzzle + casing effects
@@ -128,6 +146,10 @@ function SWEP:PrimaryAttack()
 
         self:EjectCasing()
     end
+end
+
+function SWEP:SecondaryAttack()
+	-- nothing?
 end
 
 function SWEP:ShootBullet(dmg, num, cone)
@@ -150,28 +172,54 @@ function SWEP:ShootBullet(dmg, num, cone)
     bullet.AmmoType = ammo or self.Primary.Ammo
 	
     bullet.Callback = function(att, tr, dmginfo)
-        if CLIENT and not IsFirstTimePredicted() then return end
+		if CLIENT and not IsFirstTimePredicted() then return end
 		
-        local startPos, ang = self:GetMuzzlePos()
-        if not startPos or not ang then
-            startPos = tr.StartPos or att:GetShootPos()
-        end
-
-        local effect = EffectData()
-        effect:SetStart(startPos)
-        effect:SetOrigin(tr.HitPos)
-        effect:SetNormal(tr.HitNormal)
-        util.Effect("milkwater_tracer", effect)
-    end
+		-- tracer effect
+		local startPos, ang = self:GetMuzzlePos()
+		if not startPos or not ang then
+			startPos = tr.StartPos or att:GetShootPos()
+		end
+		
+		local effect = EffectData()
+		effect:SetStart(startPos)
+		effect:SetOrigin(tr.HitPos)
+		effect:SetNormal(tr.HitNormal)
+		util.Effect("milkwater_tracer", effect)
+		
+		-- send damage number to attacker
+		if SERVER and IsValid(att) and att:IsPlayer() then
+			local hit = tr.Entity
+			
+			-- checks
+			if not IsValid(hit) then return end
+			if not hit:IsNPC() then return end
+			
+			net.Start("mw_damage_number")
+			net.WriteFloat(dmginfo:GetDamage())
+			net.WriteVector(tr.HitPos)
+			net.WriteUInt(hit:EntIndex(), 16)
+			net.Send(att)
+		end
+	end
 
     owner:FireBullets(bullet)
 end
 
 function SWEP:DoRecoil()
-	-- lol
+    local base = self.Primary.Recoil or 1
+
+    local pitch = -base
+    local yaw = math.Rand(-base * 0.25, base * 0.25)
+
+    if MW_AddRecoil then
+        MW_AddRecoil(pitch, yaw)
+    end
 end
 
 function SWEP:EjectCasing()
+	-- caseless guns exist
+	if self.Caseless then return end
+	
     local owner = self:GetOwner()
     if not IsValid(owner) then return end
 	
@@ -191,7 +239,6 @@ function SWEP:EjectCasing()
     ed:SetEntity(self)
     util.Effect(self.Casing, ed, true, true)
 end
-
 
 function SWEP:GetHandPos()
     local owner = self:GetOwner()
@@ -305,101 +352,5 @@ if CLIENT then
 	function SWEP:DrawWorldModel()
 		self:SetNoDraw(true)
 	end
-	
-	function SWEP:DrawHUD()
-		local owner = LocalPlayer()
-		if not IsValid(owner) then return end
-
-		local x = ScrW() * 0.5
-		local y = ScrH() * 0.5
-		
-		-- draw ammo arc
-		self:DrawAmmoArc(x + 50, y)
-	end
-
-	-- draw a crazy tesselated slice with convex quads
-	local function drawDonutSlice(centerX, centerY, innerRadius, outerRadius, startAngle, endAngle, segments, color)
-		local arcLen = math.rad(endAngle - startAngle) * innerRadius
-		local pixelsPerSegment = 6
-		segments = math.max(segments or 0, math.ceil(arcLen / pixelsPerSegment))
-
-		surface.SetDrawColor(color)
-		draw.NoTexture()
-
-		for i = 0, segments - 1 do
-			local t0 = i / segments
-			local t1 = (i + 1) / segments
-
-			local a0 = math.rad(startAngle + t0 * (endAngle - startAngle))
-			local a1 = math.rad(startAngle + t1 * (endAngle - startAngle))
-
-			local ox0 = centerX + math.cos(a0) * outerRadius
-			local oy0 = centerY + math.sin(a0) * outerRadius
-			local ox1 = centerX + math.cos(a1) * outerRadius
-			local oy1 = centerY + math.sin(a1) * outerRadius
-
-			local ix0 = centerX + math.cos(a0) * innerRadius
-			local iy0 = centerY + math.sin(a0) * innerRadius
-			local ix1 = centerX + math.cos(a1) * innerRadius
-			local iy1 = centerY + math.sin(a1) * innerRadius
-			
-			surface.DrawPoly({
-				{ x = ox0, y = oy0 },
-				{ x = ox1, y = oy1 },
-				{ x = ix1, y = iy1 },
-				{ x = ix0, y = iy0 },
-			})
-		end
-	end
-
-	function SWEP:DrawAmmoArc(x, y)
-		local owner = LocalPlayer()
-		if not IsValid(owner) then return end
-
-		local clip = self:Clip1()
-		local max  = self.Primary.ClipSize
-		if max <= 0 then return end
-		
-		local minThickness = 3
-		local maxThickness = 22
-
-		-- scale thickness
-		local thickness = Lerp( math.Clamp(max / 30, 0, 1), maxThickness, minThickness )
-
-		local tickLength = 12
-		local innerRadius = 50
-		local outerRadius = innerRadius + tickLength
-		
-		local arcSize = 120
-
-		-- center the arc around 0°
-		local arcStart = -arcSize * 0.5
-		local arcEnd =  arcSize * 0.5
-		
-		local tickArc = arcSize / max
-		local tickSpacing = tickArc * 0.5
-		local tickFill = tickArc - tickSpacing
-
-		for i = 1, max do
-			local startAng = arcStart + (i - 1) * tickArc
-			local endAng   = startAng + tickFill
-
-			local color
-			if i <= clip then
-				color = Color(255, 255, 255, 255)
-			else
-				color = Color(255, 255, 255, 40)
-			end
-
-			drawDonutSlice(
-				x, y,
-				innerRadius,
-				outerRadius,
-				startAng,
-				endAng,
-				nil,
-				color
-			)
-		end
-	end
 end
+

@@ -9,7 +9,7 @@ SWEP.IconOverride = "weapons/mw_smg.png"
 
 SWEP.WorldModel = "models/weapons/c_models/c_smg/c_smg.mdl"
 
-SWEP.HandOffset_Pos = Vector(3, -1, -2) -- forward, right, up
+SWEP.HandOffset_Pos = Vector(3, -1, -1) -- forward, right, up
 SWEP.HandOffset_Ang = Angle(0, 0, 180) -- pitch, yaw, roll
 
 SWEP.MuzzleOffset_Pos = Vector(25, 0, 3) -- forward, right, up
@@ -29,4 +29,4 @@ SWEP.Primary.FireDelay = 0.105
 SWEP.Primary.Damage = 8
 SWEP.Primary.NumShots = 1
 SWEP.Cone = 0.02
-SWEP.Primary.Recoil = 4
+SWEP.Primary.Recoil = 2
