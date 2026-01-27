@@ -5,12 +5,14 @@ if SERVER then
 	AddCSLuaFile("cl_damage_numbers.lua")
 	AddCSLuaFile("cl_hud.lua")
 	AddCSLuaFile("cl_camera.lua")
+	AddCSLuaFile("cl_damage_sounds.lua")
 	
 	-- add fonts
 	resource.AddFile("resource/fonts/TF2.ttf")
 	
 	-- add network strings
 	util.AddNetworkString("mw_damage_number")
+	util.AddNetworkString("mw_damage_sound")
 end
 
 if CLIENT then
@@ -18,6 +20,7 @@ if CLIENT then
 	include("cl_damage_numbers.lua")
 	include("cl_hud.lua")
 	include("cl_camera.lua")
+	include("cl_damage_sounds.lua")
 end
 
 SWEP.PrintName = "Base Weapon"
@@ -62,10 +65,13 @@ end
 
 -- get exact camera position
 function MW_GetFPCamera(ply)
+	if not IsValid(ply) then return ply:EyePos() end
+	
 	local head = ply:LookupBone("ValveBiped.Bip01_Head1")
 	
 	if head then
 		local matrix = ply:GetBoneMatrix(head)
+		if not matrix then return ply:EyePos(), ply:EyeAngles() end
 		local pos = matrix:GetTranslation()
 		local ang = matrix:GetAngles()
 		
@@ -152,6 +158,10 @@ function SWEP:SecondaryAttack()
 	-- nothing?
 end
 
+function SWEP:ModifyDamage(att, tr, dmginfo)
+    return dmginfo:GetDamage(), false
+end
+
 function SWEP:ShootBullet(dmg, num, cone)
     local owner = self:GetOwner()
     if not IsValid(owner) then return end
@@ -162,6 +172,7 @@ function SWEP:ShootBullet(dmg, num, cone)
 	local dir = ang:Forward()
 
     local bullet = {}
+	local isMiniCrit = false
     bullet.Num = num or 1
     bullet.Src = src
     bullet.Dir = dir
@@ -173,36 +184,54 @@ function SWEP:ShootBullet(dmg, num, cone)
 	
     bullet.Callback = function(att, tr, dmginfo)
 		if CLIENT and not IsFirstTimePredicted() then return end
-		
+
+		local hit = tr.Entity
+
 		-- tracer effect
 		local startPos, ang = self:GetMuzzlePos()
 		if not startPos or not ang then
 			startPos = tr.StartPos or att:GetShootPos()
 		end
-		
+
 		local effect = EffectData()
 		effect:SetStart(startPos)
 		effect:SetOrigin(tr.HitPos)
 		effect:SetNormal(tr.HitNormal)
 		util.Effect("milkwater_tracer", effect)
-		
-		-- send damage number to attacker
+
+		-- apply damage modifiers
+		local newDamage
 		if SERVER and IsValid(att) and att:IsPlayer() then
-			local hit = tr.Entity
-			
-			-- checks
-			if not IsValid(hit) then return end
-			if not hit:IsNPC() then return end
-			
-			net.Start("mw_damage_number")
-			net.WriteFloat(dmginfo:GetDamage())
-			net.WriteVector(tr.HitPos)
-			net.WriteUInt(hit:EntIndex(), 16)
-			net.Send(att)
+			if IsValid(hit) then
+				newDamage, isMiniCrit  = self:ModifyDamage(att, tr, dmginfo)
+				if isMiniCrit then
+					newDamage = newDamage * 1.35
+				end
+				dmginfo:SetDamage(newDamage)
+			end
+		end
+
+		-- send damage number
+		if SERVER and IsValid(att) and att:IsPlayer() then
+			if IsValid(hit) and hit:IsNPC() then
+				net.Start("mw_damage_number")
+				net.WriteFloat(dmginfo:GetDamage())
+				net.WriteVector(tr.HitPos)
+				net.WriteUInt(hit:EntIndex(), 16)
+				net.WriteBool(isMiniCrit)
+				net.Send(att)
+			end
 		end
 	end
 
     owner:FireBullets(bullet)
+	
+	-- send damage sound
+	if SERVER and IsValid(owner) and owner:IsPlayer() then
+		net.Start("mw_damage_sound")
+		net.WriteBool(isMiniCrit)
+		net.Send(owner)
+	end
 end
 
 function SWEP:DoRecoil()
@@ -317,7 +346,7 @@ if CLIENT then
 	end)
 
     -- draw gun in your hand
-    hook.Add("PostDrawTranslucentRenderables", "mw_3p_draw_hand_weapon", function()
+    hook.Add("PostDrawOpaqueRenderables", "mw_3p_draw_hand_weapon", function()
 		local ply = LocalPlayer()
 		local wep = ply:GetActiveWeapon()
 

@@ -4,6 +4,7 @@ net.Receive("mw_damage_number", function()
     local dmg = net.ReadFloat()
     local pos = net.ReadVector()
     local entIndex = net.ReadUInt(16)
+    local isMiniCrit = net.ReadBool()
 
     local now = CurTime()
     local existing = dmgNums[entIndex]
@@ -15,6 +16,7 @@ net.Receive("mw_damage_number", function()
         existing.life = 1.0
         existing.xoff = math.Rand(-10, 10)
         existing.yoff = math.Rand(-5, -15)
+        existing.isMiniCrit = isMiniCrit
     else
         dmgNums[entIndex] = {
             dmg = math.floor(dmg),
@@ -22,7 +24,8 @@ net.Receive("mw_damage_number", function()
             start = now,
             life = 1.0,
             xoff = math.Rand(-10, 10),
-            yoff = math.Rand(-5, -15)
+            yoff = math.Rand(-5, -15),
+            isMiniCrit = isMiniCrit
         }
     end
 end)
@@ -41,13 +44,29 @@ hook.Add("HUDPaint", "mw_draw_damage_numbers", function()
 
             local y = screen.y + d.yoff * t
             local x = screen.x + d.xoff * t
+			
+			local textColor = Color(0, 255, 0, alpha)
+			
+			local isMiniCrit = d.isMiniCrit
+			if isMiniCrit then
+				textColor = Color(255, 255, 0, alpha)
+				draw.SimpleText(
+					"MINI CRIT!",
+					"MW_TF2Damage",
+					x,
+					y - 30,
+					textColor,
+					TEXT_ALIGN_CENTER,
+					TEXT_ALIGN_CENTER
+				)
+			end
 
             draw.SimpleText(
                 "-" .. d.dmg,
                 "MW_TF2Damage",
                 x,
                 y,
-                Color(0, 255, 0, alpha),
+                textColor,
                 TEXT_ALIGN_CENTER,
                 TEXT_ALIGN_CENTER
             )
