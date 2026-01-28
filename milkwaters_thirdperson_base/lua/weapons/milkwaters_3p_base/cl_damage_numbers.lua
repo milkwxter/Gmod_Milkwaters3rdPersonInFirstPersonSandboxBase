@@ -4,7 +4,7 @@ net.Receive("mw_damage_number", function()
     local dmg = net.ReadFloat()
     local pos = net.ReadVector()
     local entIndex = net.ReadUInt(16)
-    local isMiniCrit = net.ReadBool()
+    local critState = net.ReadUInt(2) -- 0 normal, 1 mini, 2 full
 
     local now = CurTime()
     local existing = dmgNums[entIndex]
@@ -16,7 +16,7 @@ net.Receive("mw_damage_number", function()
         existing.life = 1.0
         existing.xoff = math.Rand(-10, 10)
         existing.yoff = math.Rand(-5, -15)
-        existing.isMiniCrit = isMiniCrit
+		existing.critState = critState
     else
         dmgNums[entIndex] = {
             dmg = math.floor(dmg),
@@ -25,7 +25,7 @@ net.Receive("mw_damage_number", function()
             life = 1.0,
             xoff = math.Rand(-10, 10),
             yoff = math.Rand(-5, -15),
-            isMiniCrit = isMiniCrit
+            critState = critState
         }
     end
 end)
@@ -44,23 +44,43 @@ hook.Add("HUDPaint", "mw_draw_damage_numbers", function()
 
             local y = screen.y + d.yoff * t
             local x = screen.x + d.xoff * t
-			
-			local textColor = Color(0, 255, 0, alpha)
-			
-			local isMiniCrit = d.isMiniCrit
-			if isMiniCrit then
-				textColor = Color(255, 255, 0, alpha)
-				draw.SimpleText(
-					"MINI CRIT!",
-					"MW_TF2Damage",
-					x,
-					y - 30,
-					textColor,
-					TEXT_ALIGN_CENTER,
-					TEXT_ALIGN_CENTER
-				)
-			end
 
+            -- choose color based on crit type
+            local crit = d.critState
+            local textColor
+
+            if crit == 2 then
+                textColor = Color(0, 255, 0, alpha)
+            elseif crit == 1 then
+                textColor = Color(255, 255, 0, alpha)
+            else
+                textColor = Color(255, 0, 0, alpha)
+            end
+
+            -- crit text
+            if crit == 2 then
+                draw.SimpleText(
+                    "CRIT!",
+                    "MW_TF2Damage",
+                    x,
+                    y - 30,
+                    textColor,
+                    TEXT_ALIGN_CENTER,
+                    TEXT_ALIGN_CENTER
+                )
+            elseif crit == 1 then
+                draw.SimpleText(
+                    "MINI CRIT!",
+                    "MW_TF2Damage",
+                    x,
+                    y - 30,
+                    textColor,
+                    TEXT_ALIGN_CENTER,
+                    TEXT_ALIGN_CENTER
+                )
+            end
+
+            -- damage number
             draw.SimpleText(
                 "-" .. d.dmg,
                 "MW_TF2Damage",

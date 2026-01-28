@@ -34,12 +34,12 @@ SWEP.Primary.Recoil = 5
 
 -- mini crits if your victim is in the air
 function SWEP:ModifyDamage(att, tr, dmginfo)
-    -- get base damage + base minicrits
-    local dmg, isMiniCrit = self.BaseClass.ModifyDamage(self, att, tr, dmginfo)
+    -- get base damage + base crits
+    local dmg, isMiniCrit, isFullCrit = self.BaseClass.ModifyDamage(self, att, tr, dmginfo)
 
     local hit = tr.Entity
     if not IsValid(hit) then
-        return dmg, isMiniCrit
+        return dmg, isMiniCrit, isFullCrit
     end
 
     -- airborne targets get minicrit
@@ -47,5 +47,5 @@ function SWEP:ModifyDamage(att, tr, dmginfo)
         isMiniCrit = true
     end
 
-    return dmg, isMiniCrit
+    return dmg, isMiniCrit, isFullCrit
 end

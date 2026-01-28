@@ -173,19 +173,16 @@ end
 function SWEP:ModifyDamage(att, tr, dmginfo)
     local hit = tr.Entity
     local dmg = dmginfo:GetDamage()
+	
     local isMiniCrit = false
+	local isFullCrit = false
 
     -- minicrits if the target is jarated
     if IsValid(hit) and hit._JarateTimer then
         isMiniCrit = true
     end
 	
-	-- increase damage
-	if isMiniCrit then
-		dmg = dmg * 1.35
-	end
-
-    return dmg, isMiniCrit
+    return dmg, isMiniCrit, isFullCrit
 end
 
 function SWEP:ShootBullet(dmg, num, cone)
@@ -198,7 +195,11 @@ function SWEP:ShootBullet(dmg, num, cone)
 	local dir = ang:Forward()
 
     local bullet = {}
+	
+	-- crit state
 	local isMiniCrit = false
+	local isFullCrit = false
+	
     bullet.Num = num or 1
     bullet.Src = src
     bullet.Dir = dir
@@ -229,10 +230,16 @@ function SWEP:ShootBullet(dmg, num, cone)
 		local newDamage
 		if SERVER and IsValid(att) and att:IsPlayer() then
 			if IsValid(hit) then
-				newDamage, isMiniCrit  = self:ModifyDamage(att, tr, dmginfo)
-				if isMiniCrit then
+				newDamage, isMiniCrit, isFullCrit = self:ModifyDamage(att, tr, dmginfo)
+				
+				-- increase damage based on crits
+				if isFullCrit then
+					newDamage = newDamage * 3
+				elseif isMiniCrit then
 					newDamage = newDamage * 1.35
 				end
+				
+				-- finish the calcs
 				dmginfo:SetDamage(newDamage)
 			end
 		end
@@ -244,7 +251,7 @@ function SWEP:ShootBullet(dmg, num, cone)
 				net.WriteFloat(dmginfo:GetDamage())
 				net.WriteVector(tr.HitPos)
 				net.WriteUInt(hit:EntIndex(), 16)
-				net.WriteBool(isMiniCrit)
+				net.WriteUInt(isFullCrit and 2 or (isMiniCrit and 1 or 0), 2)
 				net.Send(att)
 			end
 		end
@@ -255,7 +262,7 @@ function SWEP:ShootBullet(dmg, num, cone)
 	-- send damage sound
 	if SERVER and IsValid(owner) and owner:IsPlayer() then
 		net.Start("mw_damage_sound")
-		net.WriteBool(isMiniCrit)
+		net.WriteUInt(isFullCrit and 2 or (isMiniCrit and 1 or 0), 2)
 		net.Send(owner)
 	end
 end

@@ -1,8 +1,10 @@
 if CLIENT then
     net.Receive("mw_damage_sound", function()
-        local isMiniCrit = net.ReadBool()
+        local critState = net.ReadUInt(2)  -- 0 normal, 1 mini, 2 full
 
-        if isMiniCrit then
+        if critState == 2 then
+            surface.PlaySound("crit_hit.wav")
+        elseif critState == 1 then
             surface.PlaySound("ui/hitsound.wav")
         end
     end)
