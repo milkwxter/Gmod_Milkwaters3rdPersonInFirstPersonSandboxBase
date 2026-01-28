@@ -158,7 +158,9 @@ if SERVER then
 	
 	function ENT:ApplyDamage(hit, hitpos)
 		if not IsValid(hit) then return end
-
+		
+		if not hit:IsNPC() and not hit:IsPlayer() then return end
+		
 		local owner = self:GetOwner()
 		if not IsValid(owner) then owner = self end
 
@@ -166,12 +168,20 @@ if SERVER then
 		local wep = owner.GetActiveWeapon and owner:GetActiveWeapon()
 		local dmgAmount = wep.Primary.Damage
 		local isMiniCrit = false
+		local isFullCrit = false
 
-		-- let the weapon base modify the damage
+		-- modify the damage
 		if IsValid(wep) and wep.ModifyDamage then
 			local dmginfo = DamageInfo()
 			dmginfo:SetDamage(dmgAmount)
-			dmgAmount, isMiniCrit = wep:ModifyDamage(owner, { Entity = hit }, dmginfo)
+			dmgAmount, isMiniCrit, isFullCrit = wep.BaseClass.ModifyDamage(wep, owner, hit, dmginfo)
+			
+			-- increase damage based on crits
+			if isFullCrit then
+				dmgAmount = dmgAmount * 3
+			elseif isMiniCrit then
+				dmgAmount = dmgAmount * 1.35
+			end
 		end
 
 		-- build damageinfo
@@ -184,19 +194,22 @@ if SERVER then
 		dmg:SetDamageForce(self:GetVelocity() * 50)
 
 		hit:TakeDamageInfo(dmg)
+		
+		-- perform a magic extra effect
+		wep:ExtraEffectOnHit(owner, hit)
 
 		-- send damage numbers
 		net.Start("mw_damage_number")
 			net.WriteFloat(dmgAmount)
 			net.WriteVector(hitpos)
 			net.WriteUInt(hit:EntIndex(), 16)
-			net.WriteBool(isMiniCrit)
+			net.WriteUInt(isFullCrit and 2 or (isMiniCrit and 1 or 0), 2)
 		net.Broadcast()
 		
 		-- send damage sound
 		if SERVER and IsValid(owner) and owner:IsPlayer() then
 			net.Start("mw_damage_sound")
-			net.WriteBool(isMiniCrit)
+			net.WriteUInt(isFullCrit and 2 or (isMiniCrit and 1 or 0), 2)
 			net.Send(owner)
 		end
 	end

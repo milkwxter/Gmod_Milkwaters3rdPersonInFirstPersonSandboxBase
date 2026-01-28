@@ -13,6 +13,7 @@ if SERVER then
 	-- add network strings
 	util.AddNetworkString("mw_damage_number")
 	util.AddNetworkString("mw_damage_sound")
+	util.AddNetworkString("mw_name_popup")
 end
 
 if CLIENT then
@@ -27,6 +28,8 @@ SWEP.PrintName = "Base Weapon"
 SWEP.Category = "Milkwater"
 SWEP.Spawnable = false
 SWEP.AdminSpawnable = true
+SWEP.DrawCrosshair = false
+SWEP.DrawAmmo = false
 
 SWEP.UseFPArms = true
 SWEP.Base = "weapon_base"
@@ -93,9 +96,16 @@ function SWEP:Initialize()
 end
 
 function SWEP:Deploy()
-    if CLIENT then
+    if CLIENT or game.SinglePlayer() then
         self:CallOnClient("ForceRebuildModel")
     end
+	
+	if SERVER then
+		net.Start("mw_name_popup")
+		net.WriteFloat(CurTime() + 2)
+		net.Send(self:GetOwner())
+	end
+	
     return true
 end
 
@@ -185,6 +195,10 @@ function SWEP:ModifyDamage(att, tr, dmginfo)
     return dmg, isMiniCrit, isFullCrit
 end
 
+function SWEP:ExtraEffectOnHit(att, tr)
+	-- call me in the child weapon
+end
+
 function SWEP:ShootBullet(dmg, num, cone)
     local owner = self:GetOwner()
     if not IsValid(owner) then return end
@@ -241,12 +255,15 @@ function SWEP:ShootBullet(dmg, num, cone)
 				
 				-- finish the calcs
 				dmginfo:SetDamage(newDamage)
+				
+				-- perform a magic extra effect
+				self:ExtraEffectOnHit(att, tr)
 			end
 		end
 
 		-- send damage number
 		if SERVER and IsValid(att) and att:IsPlayer() then
-			if IsValid(hit) and hit:IsNPC() then
+			if IsValid(hit) and (hit:IsNPC() or hit:IsPlayer()) then
 				net.Start("mw_damage_number")
 				net.WriteFloat(dmginfo:GetDamage())
 				net.WriteVector(tr.HitPos)

@@ -1,12 +1,140 @@
-function SWEP:DrawHUD()
-	local owner = LocalPlayer()
-	if not IsValid(owner) then return end
+net.Receive("mw_name_popup", function()
+    LocalPlayer().NamePopupEndTime = net.ReadFloat()
+end)
 
-	local x = ScrW() * 0.5
-	local y = ScrH() * 0.5
+-- helper to see if using my weapons
+local function Using3PBase(ply)
+	if not IsValid(ply) then return false end
+    local wep = ply:GetActiveWeapon()
+    return IsValid(wep) and wep.Base == "milkwaters_3p_base"
+end
+
+hook.Add("HUDShouldDraw", "HideDefaultHealth", function(name)
+	if not Using3PBase(LocalPlayer()) then
+        return true
+    end
 	
-	-- draw ammo arc
-	self:DrawAmmoArc(x + 50, y)
+    if name == "CHudHealth" or name == "CHudBattery" then
+        return false
+    end
+end)
+
+function SWEP:DrawHUD()
+    local owner = LocalPlayer()
+    if not IsValid(owner) then return end
+
+    local x = ScrW() * 0.5
+    local y = ScrH() * 0.5
+
+    local endTime = LocalPlayer().NamePopupEndTime or 0
+    local now = CurTime()
+
+    if now < endTime then
+        local duration = endTime - (endTime - 2)
+        local remaining = endTime - now
+        local frac = math.Clamp(remaining / duration, 0, 1)
+        local alpha = frac * 255
+
+        draw.SimpleText(
+            self.PrintName,
+            "MW_TF2Damage",
+            x,
+            y * 0.5,
+            Color(255, 255, 255, alpha),
+            TEXT_ALIGN_CENTER,
+            TEXT_ALIGN_CENTER
+        )
+    end
+
+    self:DrawCrosshairHUD(x, y)
+    self:DrawAmmoArc(x + 50, y)
+	
+	-- health display
+	self:DrawHealthHUD(400, ScrH() - 200)
+	
+	-- ammo display
+	do
+		local clip = self:Clip1()
+		local reserve = owner:GetAmmoCount(self.Primary.Ammo)
+
+		local text = clip .. " / " .. reserve
+
+		draw.SimpleText(
+			text,
+			"MW_TF2Damage_Large",
+			ScrW() - 400,
+			ScrH() - 100,
+			Color(255, 255, 255, 255),
+			TEXT_ALIGN_RIGHT,
+			TEXT_ALIGN_BOTTOM
+		)
+	end
+end
+
+function SWEP:DrawHealthHUD(x, y)
+    local ply = LocalPlayer()
+    if not IsValid(ply) then return end
+
+    local hp = math.max(ply:Health(), 0)
+    local maxhp = ply:GetMaxHealth() or 100
+
+    local frac = math.Clamp(hp / maxhp, 0, 1)
+
+    -- base geometry
+	local armLength = 100
+	local thickness = 75
+
+    -- background cross
+	surface.SetDrawColor(55, 51, 49, 255)
+	surface.DrawRect(x - thickness * 0.5, y - armLength, thickness, armLength * 2)
+	surface.DrawRect(x - armLength, y - thickness * 0.5, armLength * 2, thickness)
+
+    -- fill color
+	local startColor = Color(247, 229, 198, 255)
+	local endColor = Color(200, 0, 0, 255)
+	local r = startColor.r + (endColor.r - startColor.r) * (1 - frac)
+	local g = startColor.g + (endColor.g - startColor.g) * (1 - frac)
+	local b = startColor.b + (endColor.b - startColor.b) * (1 - frac)
+	local fillColor = Color(r, g, b, 255)
+	surface.SetDrawColor(fillColor)
+	
+	-- inner geometry
+	thickness = thickness - (armLength * 0.1)
+	armLength = armLength - (thickness * 0.1)
+
+    -- vertical fill
+	local totalV = armLength * 2
+	local vHeight = totalV * frac
+	surface.DrawRect( x - thickness * 0.5, (y - armLength) + (totalV - vHeight), thickness, vHeight )
+	
+    -- horizontal fill
+	local vTop = y - armLength
+	local vBottom = y + armLength
+	local hTop = y - thickness * 0.5
+	local hBottom = y + thickness * 0.5
+	local fillY = vBottom - vHeight
+	local hFrac
+	if fillY <= hTop then
+		hFrac = 1
+	elseif fillY >= hBottom then
+		hFrac = 0
+	else
+		hFrac = 1 - ((fillY - hTop) / (hBottom - hTop))
+	end
+	
+	local hHeight = thickness * hFrac
+	surface.DrawRect( x - armLength, hBottom - hHeight, armLength * 2, hHeight )
+	
+	-- text
+    draw.SimpleText(
+        tostring(hp),
+        "MW_TF2Damage_Large",
+		x,
+		y,
+        Color(118, 107, 94, 255),
+        TEXT_ALIGN_CENTER,
+        TEXT_ALIGN_CENTER
+    )
 end
 
 -- draw a crazy tesselated slice with convex quads
@@ -93,4 +221,51 @@ function SWEP:DrawAmmoArc(x, y)
 			color
 		)
 	end
+end
+
+function SWEP:DrawCrosshairHUD(x, y)
+	local cone = self.Cone
+
+	local baseGap = math.max(0.2, 100 * cone)
+	local coneGap = cone * 300
+	local gap = baseGap + coneGap
+
+	local length = 8
+	local thickness = 1
+	
+	surface.SetDrawColor(255, 255, 255, 255)
+
+	draw.NoTexture()
+
+	-- left
+	surface.DrawPoly({
+		{x = x - gap - length, y = y - thickness},
+		{x = x - gap,          y = y - thickness},
+		{x = x - gap,          y = y + thickness},
+		{x = x - gap - length, y = y + thickness},
+	})
+
+	-- right
+	surface.DrawPoly({
+		{x = x + gap,          y = y - thickness},
+		{x = x + gap + length, y = y - thickness},
+		{x = x + gap + length, y = y + thickness},
+		{x = x + gap,          y = y + thickness},
+	})
+
+	-- top
+	surface.DrawPoly({
+		{x = x - thickness, y = y - gap - length},
+		{x = x + thickness, y = y - gap - length},
+		{x = x + thickness, y = y - gap},
+		{x = x - thickness, y = y - gap},
+	})
+
+	-- bottom
+	surface.DrawPoly({
+		{x = x - thickness, y = y + gap},
+		{x = x + thickness, y = y + gap},
+		{x = x + thickness, y = y + gap + length},
+		{x = x - thickness, y = y + gap + length},
+	})
 end

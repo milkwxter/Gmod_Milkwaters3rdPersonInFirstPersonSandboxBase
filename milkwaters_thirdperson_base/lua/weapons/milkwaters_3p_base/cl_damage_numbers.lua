@@ -101,3 +101,11 @@ surface.CreateFont("MW_TF2Damage", {
     antialias = true,
     additive = false
 })
+
+surface.CreateFont("MW_TF2Damage_Large", {
+    font = "TF2",
+    size = 64,
+    weight = 500,
+    antialias = true,
+    additive = false
+})

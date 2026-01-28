@@ -12,6 +12,7 @@ end
 
 -- helper to see if using my weapons
 local function Using3PBase(ply)
+	if not IsValid(ply) then return false end
     local wep = ply:GetActiveWeapon()
     return IsValid(wep) and wep.Base == "milkwaters_3p_base"
 end
