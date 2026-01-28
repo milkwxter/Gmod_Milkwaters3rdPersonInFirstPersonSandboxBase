@@ -3,7 +3,7 @@ if SERVER then AddCSLuaFile() end
 SWEP.Base = "milkwaters_3p_base"
 
 SWEP.PrintName = "Jarate"
-SWEP.Purpose = "A jar of piss you can throw to coat targets in piss. Piss coated targets take mini-crits!"
+SWEP.Purpose = "Coat targets in piss for mini-crits!"
 SWEP.Category = "Milkwater"
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_jarate.png"

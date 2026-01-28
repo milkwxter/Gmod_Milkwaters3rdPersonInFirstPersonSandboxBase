@@ -3,7 +3,7 @@ if SERVER then AddCSLuaFile() end
 SWEP.Base = "milkwaters_3p_base"
 
 SWEP.PrintName = "Family Business"
-SWEP.Purpose = "A fast firing shotgun with a large magazine."
+SWEP.Purpose = "Larger magazine."
 SWEP.Category = "Milkwater"
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_family_business.png"

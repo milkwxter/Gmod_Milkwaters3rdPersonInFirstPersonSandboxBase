@@ -3,7 +3,7 @@ if SERVER then AddCSLuaFile() end
 SWEP.Base = "milkwaters_3p_base"
 
 SWEP.PrintName = "SMG"
-SWEP.Purpose = "A high capacity submachinegun with no special abilities."
+SWEP.Purpose = "A standard SMG."
 SWEP.Category = "Milkwater"
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_smg.png"

@@ -3,7 +3,7 @@ if SERVER then AddCSLuaFile() end
 SWEP.Base = "milkwaters_3p_base"
 
 SWEP.PrintName = "Pretty Boy's Pocket Pistol"
-SWEP.Purpose = "An even faster firing pistol that heals you when landing a shot."
+SWEP.Purpose = "Heals you when landing a shot."
 SWEP.Category = "Milkwater"
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_pretty_boys_pocket_pistol.png"

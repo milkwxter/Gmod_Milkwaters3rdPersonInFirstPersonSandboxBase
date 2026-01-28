@@ -29,23 +29,43 @@ function SWEP:DrawHUD()
     local endTime = LocalPlayer().NamePopupEndTime or 0
     local now = CurTime()
 
+	-- weapon name popup + desc
     if now < endTime then
         local duration = endTime - (endTime - 2)
         local remaining = endTime - now
         local frac = math.Clamp(remaining / duration, 0, 1)
         local alpha = frac * 255
 
-        draw.SimpleText(
-            self.PrintName,
-            "MW_TF2Damage",
-            x,
-            y * 0.5,
-            Color(255, 255, 255, alpha),
-            TEXT_ALIGN_CENTER,
-            TEXT_ALIGN_CENTER
-        )
+		local baseX = x
+		local baseY = y * 0.5
+		local spacing = 40
+
+		draw.SimpleTextOutlined(
+			self.PrintName,
+			"MW_TF2Damage",
+			baseX,
+			baseY,
+			Color(247, 229, 198, alpha),
+			TEXT_ALIGN_CENTER,
+			TEXT_ALIGN_CENTER,
+			2,
+			Color(55, 51, 49, alpha)
+		)
+
+		draw.SimpleTextOutlined(
+			self.Purpose,
+			"MW_TF2Damage_Small",
+			baseX,
+			baseY + spacing,
+			Color(247, 229, 198, alpha),
+			TEXT_ALIGN_CENTER,
+			TEXT_ALIGN_CENTER,
+			1,
+			Color(55, 51, 49, alpha)
+		)
     end
 
+	-- ammo + crosshair display
     self:DrawCrosshairHUD(x, y)
     self:DrawAmmoArc(x + 50, y)
 	

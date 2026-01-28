@@ -3,7 +3,7 @@ if SERVER then AddCSLuaFile() end
 SWEP.Base = "milkwaters_3p_base"
 
 SWEP.PrintName = "Winger"
-SWEP.Purpose = "A powerful pistol that lets you jump higher."
+SWEP.Purpose = "Jump higher."
 SWEP.Category = "Milkwater"
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_winger.png"

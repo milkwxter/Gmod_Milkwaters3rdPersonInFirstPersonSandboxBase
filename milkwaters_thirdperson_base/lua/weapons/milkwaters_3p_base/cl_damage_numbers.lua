@@ -102,6 +102,13 @@ surface.CreateFont("MW_TF2Damage", {
     additive = false
 })
 
+surface.CreateFont("MW_TF2Damage_Small", {
+    font = "TF2",
+    size = 16,
+    weight = 500,
+    antialias = true,
+    additive = false
+})
 surface.CreateFont("MW_TF2Damage_Large", {
     font = "TF2",
     size = 64,
