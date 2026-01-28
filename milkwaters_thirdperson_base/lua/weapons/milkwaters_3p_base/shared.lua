@@ -49,6 +49,11 @@ SWEP.Primary.NumShots = 1
 SWEP.Primary.Recoil = 3
 SWEP.Cone = 0.02
 
+SWEP.Projectile = false
+SWEP.ProjectileClass = ""
+SWEP.ProjectileSpeed = 1000
+SWEP.ProjectileGravity = false
+
 SWEP.HandOffset_Pos = Vector(0, 0, 0) -- forward, right, up
 SWEP.HandOffset_Ang = Angle(0, 0, 0) -- pitch, yaw, roll
 
@@ -108,7 +113,10 @@ function SWEP:CanPrimaryAttack()
 	if CLIENT and not IsFirstTimePredicted() then return false end
 	
     -- no ammo
-    if self:Clip1() <= 0 then return false end
+    if self:Clip1() <= 0 then 
+		self:Reload()
+		return false 
+	end
 
     return true
 end
@@ -122,7 +130,11 @@ function SWEP:PrimaryAttack()
     end
 
     -- fire
-    self:ShootBullet(self.Primary.Damage, self.Primary.NumShots, self.Cone)
+	if self.Projectile then
+		self:ShootProjectile()
+	else
+		self:ShootBullet(self.Primary.Damage, self.Primary.NumShots, self.Cone)
+	end
 
     -- ammo, sound, timing, animation
     self:TakePrimaryAmmo(1)
@@ -159,7 +171,8 @@ function SWEP:SecondaryAttack()
 end
 
 function SWEP:ModifyDamage(att, tr, dmginfo)
-    return dmginfo:GetDamage(), false
+	local isMiniCrit = false
+    return dmginfo:GetDamage(), isMiniCrit
 end
 
 function SWEP:ShootBullet(dmg, num, cone)
@@ -232,6 +245,40 @@ function SWEP:ShootBullet(dmg, num, cone)
 		net.WriteBool(isMiniCrit)
 		net.Send(owner)
 	end
+end
+
+function SWEP:ShootProjectile()
+    if not SERVER then return end
+
+    local owner = self:GetOwner()
+    if not IsValid(owner) then return end
+
+    local pos, ang = self:GetMuzzlePos()
+    if not pos or not ang then return end
+	
+	ang = owner:EyeAngles()
+
+    local ent = ents.Create(self.ProjectileClass)
+    if not IsValid(ent) then return end
+
+    ent:SetPos(pos)
+    ent:SetAngles(ang)
+    ent:SetOwner(owner)
+	
+	ent.Damage = self.Primary.Damage
+	
+    ent:Spawn()
+    ent:Activate()
+
+    local phys = ent:GetPhysicsObject()
+    if IsValid(phys) then
+        phys:SetVelocity(ang:Forward() * self.ProjectileSpeed)
+        if not self.ProjectileGravity then
+            phys:EnableGravity(false)
+        end
+    end
+
+    return ent
 end
 
 function SWEP:DoRecoil()
