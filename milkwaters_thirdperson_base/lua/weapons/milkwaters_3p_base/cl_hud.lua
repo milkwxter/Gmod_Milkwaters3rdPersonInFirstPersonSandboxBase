@@ -56,17 +56,18 @@ function SWEP:DrawHUD()
 	do
 		local clip = self:Clip1()
 		local reserve = owner:GetAmmoCount(self.Primary.Ammo)
-
 		local text = clip .. " / " .. reserve
 
-		draw.SimpleText(
+		draw.SimpleTextOutlined(
 			text,
 			"MW_TF2Damage_Large",
 			ScrW() - 400,
 			ScrH() - 100,
-			Color(255, 255, 255, 255),
+			Color(247, 229, 198, 255),
 			TEXT_ALIGN_RIGHT,
-			TEXT_ALIGN_BOTTOM
+			TEXT_ALIGN_BOTTOM,
+			3,
+			Color(55, 51, 49, 255)
 		)
 	end
 end
@@ -83,6 +84,22 @@ function SWEP:DrawHealthHUD(x, y)
     -- base geometry
 	local armLength = 100
 	local thickness = 75
+	
+	-- danger pulse
+	if frac <= 0.5 then
+		local pulse = math.abs(math.sin(CurTime() * 8))
+		local alpha = pulse * 150
+
+		local danger = 1 - frac
+		local extra = (danger * 20) + (pulse * danger * 15)
+
+		local pulseArmLength = armLength + extra
+		local pulseThickness = thickness + extra
+		
+		surface.SetDrawColor(200, 0, 0, alpha)
+		surface.DrawRect(x - pulseThickness * 0.5, y - pulseArmLength, pulseThickness, pulseArmLength * 2)
+		surface.DrawRect(x - pulseArmLength, y - pulseThickness * 0.5, pulseArmLength * 2, pulseThickness)
+	end
 
     -- background cross
 	surface.SetDrawColor(55, 51, 49, 255)
@@ -206,9 +223,9 @@ function SWEP:DrawAmmoArc(x, y)
 
 		local color
 		if i <= clip then
-			color = Color(255, 255, 255, 255)
+			color = Color(247, 229, 198, 255)
 		else
-			color = Color(255, 255, 255, 40)
+			color = Color(247, 229, 198, 40)
 		end
 
 		drawDonutSlice(
