@@ -74,6 +74,8 @@ function ENT:Initialize()
 end
 
 function ENT:PhysicsCollide(data, phys)
+	if self.HasAppliedDamage then return end
+	
     local hit = data.HitEntity
     local owner = self:GetOwner()
     local pos = data.HitPos
@@ -81,6 +83,7 @@ function ENT:PhysicsCollide(data, phys)
 	
 	-- apply damage
     if IsValid(hit) and hit ~= owner then
+		self.HasAppliedDamage = true
 		self:ApplyDamage(hit, pos)
 	end
 
@@ -159,8 +162,21 @@ if SERVER then
 		local owner = self:GetOwner()
 		if not IsValid(owner) then owner = self end
 
+		-- get the weapon that fired the syringe
+		local wep = owner.GetActiveWeapon and owner:GetActiveWeapon()
+		local dmgAmount = wep.Primary.Damage
+		local isMiniCrit = false
+
+		-- let the weapon base modify the damage
+		if IsValid(wep) and wep.ModifyDamage then
+			local dmginfo = DamageInfo()
+			dmginfo:SetDamage(dmgAmount)
+			dmgAmount, isMiniCrit = wep:ModifyDamage(owner, { Entity = hit }, dmginfo)
+		end
+
+		-- build damageinfo
 		local dmg = DamageInfo()
-		dmg:SetDamage(self.Damage or 25)
+		dmg:SetDamage(dmgAmount)
 		dmg:SetAttacker(owner)
 		dmg:SetInflictor(self)
 		dmg:SetDamageType(DMG_BULLET)
@@ -171,10 +187,17 @@ if SERVER then
 
 		-- send damage numbers
 		net.Start("mw_damage_number")
-			net.WriteFloat(self.Damage or 25)
+			net.WriteFloat(dmgAmount)
 			net.WriteVector(hitpos)
 			net.WriteUInt(hit:EntIndex(), 16)
-			net.WriteBool(false) -- isMiniCrit
+			net.WriteBool(isMiniCrit)
 		net.Broadcast()
+		
+		-- send damage sound
+		if SERVER and IsValid(owner) and owner:IsPlayer() then
+			net.Start("mw_damage_sound")
+			net.WriteBool(isMiniCrit)
+			net.Send(owner)
+		end
 	end
 end

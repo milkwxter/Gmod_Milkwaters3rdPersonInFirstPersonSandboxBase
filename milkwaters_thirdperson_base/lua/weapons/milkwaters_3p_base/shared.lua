@@ -171,8 +171,21 @@ function SWEP:SecondaryAttack()
 end
 
 function SWEP:ModifyDamage(att, tr, dmginfo)
-	local isMiniCrit = false
-    return dmginfo:GetDamage(), isMiniCrit
+    local hit = tr.Entity
+    local dmg = dmginfo:GetDamage()
+    local isMiniCrit = false
+
+    -- minicrits if the target is jarated
+    if IsValid(hit) and hit._JarateTimer then
+        isMiniCrit = true
+    end
+	
+	-- increase damage
+	if isMiniCrit then
+		dmg = dmg * 1.35
+	end
+
+    return dmg, isMiniCrit
 end
 
 function SWEP:ShootBullet(dmg, num, cone)
