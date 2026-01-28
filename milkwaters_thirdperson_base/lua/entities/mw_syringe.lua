@@ -174,7 +174,14 @@ if SERVER then
 		if IsValid(wep) and wep.ModifyDamage then
 			local dmginfo = DamageInfo()
 			dmginfo:SetDamage(dmgAmount)
-			dmgAmount, isMiniCrit, isFullCrit = wep.BaseClass.ModifyDamage(wep, owner, hit, dmginfo)
+			
+			local fakeTr = {
+				Entity = hit,
+				HitPos = hitpos,
+				HitNormal = Vector(0,0,1)
+			}
+
+			dmgAmount, isMiniCrit, isFullCrit = wep:ModifyDamage(owner, fakeTr, dmginfo)
 			
 			-- increase damage based on crits
 			if isFullCrit then
@@ -197,14 +204,9 @@ if SERVER then
 		
 		-- perform a magic extra effect
 		wep:ExtraEffectOnHit(owner, hit)
-
-		-- send damage numbers
-		net.Start("mw_damage_number")
-			net.WriteFloat(dmgAmount)
-			net.WriteVector(hitpos)
-			net.WriteUInt(hit:EntIndex(), 16)
-			net.WriteUInt(isFullCrit and 2 or (isMiniCrit and 1 or 0), 2)
-		net.Broadcast()
+		
+		-- add time of hit for the damage numbers hook (trust me)
+		hit._MW_LastHit = {attacker = owner, crit = isFullCrit and 2 or (isMiniCrit and 1 or 0), timeHit = CurTime()}
 		
 		-- send damage sound
 		if SERVER and IsValid(owner) and owner:IsPlayer() then

@@ -33,7 +33,7 @@ function ENT:Initialize()
         end
 
         self.Radius = 200
-        self.Duration = 8
+        self.Duration = 10
     end
 end
 
@@ -55,7 +55,7 @@ function ENT:PhysicsCollide(data, phys)
         self:EmitSound("weapons/jar_explode.wav", 75, 100)
 		
 		-- aoe effect
-		for _, ent in ipairs(ents.FindInSphere(pos, 200)) do
+		for _, ent in ipairs(ents.FindInSphere(pos, self.Radius)) do
 			if ent:IsPlayer() or ent:IsNPC() then
 				self:ApplyJarate(ent)
 			end
@@ -92,7 +92,7 @@ function ENT:ApplyJarate(ent)
 
     -- create a unique timer ID for this entity
     ent._JarateTimer = "jarate_timer_" .. ent:EntIndex()
-    timer.Create(ent._JarateTimer, 5, 1, function()
+    timer.Create(ent._JarateTimer, self.Duration, 1, function()
 		if not IsValid(ent) then return end
 
 		-- restore color

@@ -221,6 +221,7 @@ function SWEP:ShootBullet(dmg, num, cone)
     bullet.Tracer = 0
     bullet.Force = force or dmg
     bullet.Damage = dmg
+	bullet.HullSize = 0.1
     bullet.AmmoType = ammo or self.Primary.Ammo
 	
     bullet.Callback = function(att, tr, dmginfo)
@@ -256,20 +257,11 @@ function SWEP:ShootBullet(dmg, num, cone)
 				-- finish the calcs
 				dmginfo:SetDamage(newDamage)
 				
+				-- add time of hit for the damage numbers hook (trust me)
+				hit._MW_LastHit = {attacker = att, crit = isFullCrit and 2 or (isMiniCrit and 1 or 0), timeHit = CurTime()}
+				
 				-- perform a magic extra effect
 				self:ExtraEffectOnHit(att, tr)
-			end
-		end
-
-		-- send damage number
-		if SERVER and IsValid(att) and att:IsPlayer() then
-			if IsValid(hit) and (hit:IsNPC() or hit:IsPlayer()) then
-				net.Start("mw_damage_number")
-				net.WriteFloat(dmginfo:GetDamage())
-				net.WriteVector(tr.HitPos)
-				net.WriteUInt(hit:EntIndex(), 16)
-				net.WriteUInt(isFullCrit and 2 or (isMiniCrit and 1 or 0), 2)
-				net.Send(att)
 			end
 		end
 	end
@@ -283,6 +275,51 @@ function SWEP:ShootBullet(dmg, num, cone)
 		net.Send(owner)
 	end
 end
+
+hook.Add("ScalePlayerDamage", "mw_disable_hitgroups_player", function(ply, hitgroup, dmginfo)
+	local attacker = dmginfo:GetAttacker()
+	if not IsValid(attacker) or not attacker:IsPlayer() then return end
+	
+	local wep = attacker:GetActiveWeapon()
+	if not IsValid(wep) then return end
+	
+    -- remove all hitgroup scaling for my guns
+	if wep.Base == "milkwaters_3p_base" then
+		return false
+	end
+end)
+
+hook.Add("ScaleNPCDamage", "mw_disable_hitgroups_npc", function(ply, hitgroup, dmginfo)
+	local attacker = dmginfo:GetAttacker()
+	if not IsValid(attacker) or not attacker:IsPlayer() then return end
+	
+	local wep = attacker:GetActiveWeapon()
+	if not IsValid(wep) then return end
+	
+    -- remove all hitgroup scaling for my guns
+	if wep.Base == "milkwaters_3p_base" then
+		return false
+	end
+end)
+
+-- damage numbers hook
+hook.Add("EntityTakeDamage", "mw_damage_numbers", function(ent, dmginfo)
+    local tag = ent._MW_LastHit
+    if not tag then return end
+    if tag.timeHit < CurTime() - 0.1 then return end
+
+    local att = tag.attacker
+    if not (IsValid(att) and att:IsPlayer()) then return end
+
+    net.Start("mw_damage_number")
+    net.WriteFloat(dmginfo:GetDamage())
+    net.WriteVector(ent:WorldSpaceCenter())
+    net.WriteUInt(ent:EntIndex(), 16)
+    net.WriteUInt(tag.crit, 2)
+    net.Send(att)
+
+    ent._MW_LastHit = nil
+end)
 
 function SWEP:ShootProjectile()
     if not SERVER then return end

@@ -1,3 +1,4 @@
+-- cl_damage_numbers.lua
 local dmgNums = {}
 
 net.Receive("mw_damage_number", function()
