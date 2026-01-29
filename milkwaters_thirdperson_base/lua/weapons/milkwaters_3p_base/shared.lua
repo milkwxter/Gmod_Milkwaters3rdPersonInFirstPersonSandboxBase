@@ -6,6 +6,7 @@ if SERVER then
 	AddCSLuaFile("cl_hud.lua")
 	AddCSLuaFile("cl_camera.lua")
 	AddCSLuaFile("cl_damage_sounds.lua")
+	AddCSLuaFile("cl_body.lua")
 	AddCSLuaFile("sh_render.lua")
 	
 	-- add fonts
@@ -23,6 +24,7 @@ if CLIENT then
 	include("cl_hud.lua")
 	include("cl_camera.lua")
 	include("cl_damage_sounds.lua")
+	include("cl_body.lua")
 	include("sh_render.lua")
 end
 
@@ -53,6 +55,9 @@ SWEP.Primary.Damage = 10
 SWEP.Primary.NumShots = 1
 SWEP.Primary.Recoil = 3
 SWEP.Cone = 0.02
+
+SWEP.ReloadTime = 2.0
+SWEP.ReloadGesture = ACT_HL2MP_GESTURE_RELOAD_AR2
 
 SWEP.Projectile = false
 SWEP.ProjectileClass = ""
@@ -274,6 +279,43 @@ function SWEP:ShootBullet(dmg, num, cone)
 	end
 end
 
+function SWEP:CanReload()
+    if self.Reloading then return false end
+    if self:Clip1() >= self.Primary.ClipSize then return false end
+    return true
+end
+
+function SWEP:Reload()
+    if not self:CanReload() then return end
+    self:StartReload()
+end
+
+function SWEP:StartReload()
+    local owner = self:GetOwner()
+    if not IsValid(owner) then return end
+
+    self.Reloading = true
+    self.ReloadEnd = CurTime() + self.ReloadTime
+
+    -- play 3p animation
+    owner:DoAnimationEvent(self.ReloadGesture)
+end
+
+function SWEP:FinishReload()
+    self.Reloading = false
+
+    local owner = self:GetOwner()
+    if not IsValid(owner) then return end
+
+    local ammo = owner:GetAmmoCount(self.Primary.Ammo)
+    local needed = self.Primary.ClipSize - self:Clip1()
+
+    local toLoad = math.min(needed, ammo)
+
+    self:SetClip1(self:Clip1() + toLoad)
+    owner:SetAmmo(ammo - toLoad, self.Primary.Ammo)
+end
+
 hook.Add("ScalePlayerDamage", "mw_disable_hitgroups_player", function(ply, hitgroup, dmginfo)
 	local attacker = dmginfo:GetAttacker()
 	if not IsValid(attacker) or not attacker:IsPlayer() then return end
@@ -319,6 +361,30 @@ hook.Add("EntityTakeDamage", "mw_damage_numbers", function(ent, dmginfo)
     ent._MW_LastHit = nil
 end)
 
+local function ResolveMuzzleCollision(owner, muzzlePos)
+    local eye = owner:EyePos()
+	
+    local tr1 = util.TraceLine({
+        start  = eye,
+        endpos = muzzlePos,
+        filter = owner,
+        mask   = MASK_SOLID_BRUSHONLY
+    })
+	
+    local tr2 = util.TraceLine({
+        start  = muzzlePos,
+        endpos = eye,
+        filter = owner,
+        mask   = MASK_SOLID_BRUSHONLY
+    })
+	
+    if tr1.Hit or tr2.Hit then
+        return eye, true
+    end
+
+    return muzzlePos, false
+end
+
 function SWEP:ShootProjectile()
     if not SERVER then return end
 
@@ -329,6 +395,8 @@ function SWEP:ShootProjectile()
     if not pos or not ang then return end
 	
 	ang = owner:EyeAngles()
+	
+	pos, blocked = ResolveMuzzleCollision(owner, pos)
 
     local ent = ents.Create(self.ProjectileClass)
     if not IsValid(ent) then return end
@@ -432,4 +500,10 @@ function SWEP:GetMuzzlePos()
     )
 
     return pos, ang
+end
+
+function SWEP:Think()
+    if self.Reloading and CurTime() >= self.ReloadEnd then
+        self:FinishReload()
+    end
 end
