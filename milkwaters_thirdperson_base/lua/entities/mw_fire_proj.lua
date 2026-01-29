@@ -14,6 +14,8 @@ if SERVER then
     ENT.LifeTime = 0.4
     ENT.Speed = 1000
     ENT.Size = 2
+	
+	ENT._DebugDisplay = false
 
     function ENT:Initialize()
         self:SetMoveType(MOVETYPE_NONE)
@@ -26,13 +28,12 @@ if SERVER then
         self:SetModel("models/hunter/blocks/cube025x025x025.mdl")
 		self:SetColor(Color(255, 100, 0))
 		self:SetMaterial("models/debug/debugwhite")
-		self:SetNoDraw(false)
+		self:SetNoDraw(not _DebugDisplay)
     end
 
     function ENT:Think()
         if not self.DieTime then
             self.DieTime = CurTime() + self.LifeTime
-            return true
         end
 
         if CurTime() > self.DieTime then
@@ -80,60 +81,77 @@ if SERVER then
     function ENT:OnHit(tr)
 		local ent = tr.Entity
 		if not IsValid(ent) then return end
-		if not ent:IsPlayer() and not ent:IsNPC() then return end
-		
-		-- ignite for 6 seconds
-		ent:Ignite(6, 0)
-
-		-- per target damage cooldown
-		ent._NextFlameDamage = ent._NextFlameDamage or 0
-		if CurTime() < ent._NextFlameDamage then return end
-		ent._NextFlameDamage = CurTime() + 0.075
 
 		local attacker = self:GetOwner()
 		if not IsValid(attacker) then attacker = self end
-		
-		-- deal damage
-		local wep = attacker.GetActiveWeapon and attacker:GetActiveWeapon()
-		local dmgAmount = wep.Primary.Damage
-		
-		-- modify the damage
-		if IsValid(wep) and wep.ModifyDamage then
-			local dmginfo = DamageInfo()
-			dmginfo:SetDamage(dmgAmount)
-			
-			local fakeTr = {
-				Entity = ent,
-				HitPos = ent:GetPos(),
-				HitNormal = Vector(0,0,1)
+
+		-- props
+		if ent:GetMoveType() == MOVETYPE_VPHYSICS then
+			-- ignite props
+			ent:Ignite(6, 0)
+
+			-- push them a bit
+			local phys = ent:GetPhysicsObject()
+			if IsValid(phys) then
+				phys:ApplyForceOffset(self:GetForward() * 200, tr.HitPos)
+			end
+
+			return
+		end
+
+		-- living people
+		if ent:IsPlayer() or ent:IsNPC() then
+			ent:Ignite(6, 0)
+
+			-- per target flame tick cooldown
+			ent._NextFlameDamage = ent._NextFlameDamage or 0
+			if CurTime() < ent._NextFlameDamage then return end
+			ent._NextFlameDamage = CurTime() + 0.075
+
+			-- damage calculation
+			local wep = attacker.GetActiveWeapon and attacker:GetActiveWeapon()
+			local dmgAmount = wep and wep.Primary and wep.Primary.Damage or 5
+
+			if IsValid(wep) and wep.ModifyDamage then
+				local dmginfo = DamageInfo()
+				dmginfo:SetDamage(dmgAmount)
+
+				local fakeTr = {
+					Entity = ent,
+					HitPos = ent:GetPos(),
+					HitNormal = Vector(0,0,1)
+				}
+
+				dmgAmount, isMiniCrit, isFullCrit = wep:ModifyDamage(attacker, fakeTr, dmginfo)
+
+				if isFullCrit then
+					dmgAmount = dmgAmount * 3
+				elseif isMiniCrit then
+					dmgAmount = dmgAmount * 1.35
+				end
+			end
+
+			local dmg = DamageInfo()
+			dmg:SetDamage(dmgAmount)
+			dmg:SetDamageType(DMG_BURN)
+			dmg:SetAttacker(attacker)
+			dmg:SetInflictor(self)
+			dmg:SetDamagePosition(tr.HitPos)
+			ent:TakeDamageInfo(dmg)
+
+			ent._MW_LastHit = {
+				attacker = attacker,
+				crit = isFullCrit and 2 or (isMiniCrit and 1 or 0),
+				timeHit = CurTime()
 			}
 
-			dmgAmount, isMiniCrit, isFullCrit = wep:ModifyDamage(attacker, fakeTr, dmginfo)
-			
-			-- increase damage based on crits
-			if isFullCrit then
-				dmgAmount = dmgAmount * 3
-			elseif isMiniCrit then
-				dmgAmount = dmgAmount * 1.35
+			if SERVER and IsValid(attacker) and attacker:IsPlayer() then
+				net.Start("mw_damage_sound")
+				net.WriteUInt(isFullCrit and 2 or (isMiniCrit and 1 or 0), 2)
+				net.Send(attacker)
 			end
-		end
-		
-		local dmg = DamageInfo()
-		dmg:SetDamage(dmgAmount)
-		dmg:SetDamageType(DMG_BURN)
-		dmg:SetAttacker(attacker)
-		dmg:SetInflictor(self)
-		dmg:SetDamagePosition(tr.HitPos)
-		ent:TakeDamageInfo(dmg)
 
-		-- add time of hit for the damage numbers hook (trust me)
-		ent._MW_LastHit = {attacker = attacker, crit = isFullCrit and 2 or (isMiniCrit and 1 or 0), timeHit = CurTime()}
-		
-		-- send damage sound
-		if SERVER and IsValid(attacker) and attacker:IsPlayer() then
-			net.Start("mw_damage_sound")
-			net.WriteUInt(isFullCrit and 2 or (isMiniCrit and 1 or 0), 2)
-			net.Send(attacker)
+			return
 		end
 	end
 end
