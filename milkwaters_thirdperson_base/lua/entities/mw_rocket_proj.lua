@@ -12,6 +12,7 @@ ENT.Spawnable = false
 
 local impactEffect = "ExplosionCore_MidAir"
 local trailEffect = "rockettrail"
+local explosionSound = "weapons/explode1.wav"
 
 function ENT:Initialize()
     if SERVER then
@@ -55,6 +56,9 @@ function ENT:Detonate(pos, normal)
 	
 	-- server decal
 	self:MakeScorchDecal(pos, normal)
+	
+	-- sound
+    self:EmitSound(explosionSound)
 	
 	-- damage
 	self:DoExplosionDamage(pos)
@@ -105,8 +109,6 @@ function ENT:DoExplosionDamage(pos)
 
 				damage, isMiniCrit, isFullCrit = wep:ModifyDamage(attacker, fakeTr, dmginfo)
 				
-				print(isFullCrit and 2 or (isMiniCrit and 1 or 0))
-				
 				-- increase damage based on crits
 				if isFullCrit then
 					damage = damage * 3
@@ -147,9 +149,7 @@ function ENT:DoExplosionDamage(pos)
 			end
 
 			-- apply to players
-			if ent:IsPlayer() then
-				ent:SetVelocity(ent:GetVelocity() + dir * force)
-			end
+			ent:SetVelocity(ent:GetVelocity() + dir * force)
 
             -- gibbing logic
             if ent:IsPlayer() and (damage > oldHP + 10) then

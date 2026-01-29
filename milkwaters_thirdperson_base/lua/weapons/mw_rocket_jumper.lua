@@ -17,7 +17,7 @@ SWEP.MuzzleOffset_Pos = Vector(0, 0, 7) -- forward, right, up
 SWEP.MuzzleOffset_Ang = Angle(0, 0, 0) -- pitch, yaw, roll
 SWEP.MuzzleEffect = ""
 
-SWEP.SoundShootPrimary = "weapons/rocket_shoot.wav"
+SWEP.SoundShootPrimary = "weapons/rocket_jumper_shoot.wav"
 SWEP.HoldType = "rpg"
 SWEP.Caseless = true
 
