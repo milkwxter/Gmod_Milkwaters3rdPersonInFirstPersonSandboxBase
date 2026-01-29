@@ -1,14 +1,5 @@
 -- shared.lua
 if SERVER then
-	-- add my files
-	AddCSLuaFile()
-	AddCSLuaFile("cl_damage_numbers.lua")
-	AddCSLuaFile("cl_hud.lua")
-	AddCSLuaFile("cl_camera.lua")
-	AddCSLuaFile("cl_damage_sounds.lua")
-	AddCSLuaFile("cl_body.lua")
-	AddCSLuaFile("sh_render.lua")
-	
 	-- add fonts
 	resource.AddFile("resource/fonts/TF2.ttf")
 	
@@ -18,15 +9,26 @@ if SERVER then
 	util.AddNetworkString("mw_name_popup")
 end
 
+-- add my files
+AddCSLuaFile()
+AddCSLuaFile("cl_damage_numbers.lua")
+AddCSLuaFile("cl_hud.lua")
+AddCSLuaFile("cl_camera.lua")
+AddCSLuaFile("cl_damage_sounds.lua")
+AddCSLuaFile("sh_render.lua")
+AddCSLuaFile("sh_sound.lua")
+
+-- give clients certain files
 if CLIENT then
-	-- give clients certain files
 	include("cl_damage_numbers.lua")
 	include("cl_hud.lua")
 	include("cl_camera.lua")
 	include("cl_damage_sounds.lua")
-	include("cl_body.lua")
-	include("sh_render.lua")
 end
+
+-- rest of the files are for everyone
+include("sh_render.lua")
+include("sh_sound.lua")
 
 SWEP.PrintName = "Base Weapon"
 SWEP.Category = "Milkwater"
@@ -41,9 +43,15 @@ SWEP.Base = "weapon_base"
 SWEP.WorldModel = "models/props_junk/garbage_milkcarton002a.mdl"
 SWEP.HoldType = "pistol"
 SWEP.PrimaryAnim = ACT_VM_PRIMARYATTACK
+
+SWEP.LoopShootingSound = false
 SWEP.SoundShootPrimary = "Weapon_Pistol.Empty"
+SWEP.SoundShootLoop = ""
+SWEP.SoundShootEnd = ""
+
 SWEP.Casing = "ShellEject"
 SWEP.Caseless = false
+SWEP.PlayAttackAnim = true
 
 SWEP.Primary.ClipSize = 12
 SWEP.Primary.DefaultClip = 12
@@ -70,6 +78,7 @@ SWEP.HandOffset_Ang = Angle(0, 0, 0) -- pitch, yaw, roll
 SWEP.MuzzleOffset_Pos = Vector(0, 0, 0) -- forward, right, up
 SWEP.MuzzleOffset_Ang = Angle(0, 0, 0) -- pitch, yaw, roll
 SWEP.MuzzleEffect = "muzzle_shotgun"
+SWEP.MuzzleEffectStaysWhileFiring = false
 
 local function MW_Using3PBase(ply)
     local wep = ply:GetActiveWeapon()
@@ -101,10 +110,6 @@ function SWEP:Initialize()
 end
 
 function SWEP:Deploy()
-    if CLIENT or game.SinglePlayer() then
-        self:CallOnClient("ForceRebuildModel")
-    end
-	
 	if SERVER then
 		net.Start("mw_name_popup")
 		net.WriteFloat(CurTime() + 2)
@@ -114,8 +119,21 @@ function SWEP:Deploy()
     return true
 end
 
-function SWEP:ForceRebuildModel()
-    handWepModel = nil
+function SWEP:Holster()
+    self:MW_StopLoopingSound()
+    return true
+end
+
+function SWEP:OnRemove()
+    self:MW_StopLoopingSound()
+end
+
+local function ShouldBlockPrediction()
+    -- singleplayer: never block
+    if game.SinglePlayer() then return false end
+
+    -- multiplayer: block mispredicted frames
+    return CLIENT and not IsFirstTimePredicted()
 end
 
 -- are we allowed to attack
@@ -125,13 +143,19 @@ function SWEP:CanPrimaryAttack()
     if not IsValid(owner) then return false end
 	
 	-- stop client predicting in multiplayer
-	if CLIENT and not IsFirstTimePredicted() then return false end
+	if ShouldBlockPrediction() then return false end
 	
     -- no ammo
-    if self:Clip1() <= 0 then 
-		self:Reload()
+    if self:Clip1() <= 0 then
+		if CLIENT then
+			self:StopMuzzleEffect()
+		end
+		
 		return false 
 	end
+	
+	-- you cant shoot and reload
+    if self.Reloading then return false end
 
     return true
 end
@@ -153,10 +177,13 @@ function SWEP:PrimaryAttack()
 
     -- ammo, sound, timing, animation
     self:TakePrimaryAmmo(1)
-    self:EmitSound(self.SoundShootPrimary)
+	if not self.LoopShootingSound then
+		self:EmitSound(self.SoundShootPrimary)
+	end
+    
     self:SetNextPrimaryFire(CurTime() + (self.Primary.FireDelay or 0.1))
     local owner = self:GetOwner()
-    if IsValid(owner) then
+    if IsValid(owner) and self.PlayAttackAnim == true then
         owner:SetAnimation(PLAYER_ATTACK1)
     end
 
@@ -172,10 +199,45 @@ function SWEP:PrimaryAttack()
     if not startPos or not ang then return end
 	
     if SERVER then
-		if self.MuzzleEffect ~= "" then
-			ParticleEffect(self.MuzzleEffect, startPos, ang, nil)
-		end
         self:EjectCasing()
+		self:DoMuzzleEffect()
+    end
+end
+
+if SERVER then
+    function SWEP:DoMuzzleEffect()
+        if self.MuzzleEffect == "" then return end
+
+        local startPos, ang = self:GetMuzzlePos()
+        if not startPos or not ang then return end
+
+        local att = self:LookupAttachment("muzzle") or 1
+
+        -- one-shot
+        if not self.MuzzleEffectStaysWhileFiring then
+            ParticleEffect(self.MuzzleEffect, startPos, ang, self)
+            return
+        end
+
+        -- looping
+        if not IsValid(self.MuzzleLoop) then
+            self:CallOnClient("DoMuzzleEffect_Looping", att)
+        end
+    end
+end
+
+if CLIENT then
+    function SWEP:DoMuzzleEffect_Looping(att)
+        if not IsValid(self.MuzzleLoop) then
+            self.MuzzleLoop = CreateParticleSystem(self, self.MuzzleEffect, PATTACH_POINT, att)
+        end
+    end
+
+    function SWEP:StopMuzzleEffect()
+        if IsValid(self.MuzzleLoop) then
+            self.MuzzleLoop:StopEmission(false, true)
+            self.MuzzleLoop = nil
+        end
     end
 end
 
@@ -308,6 +370,9 @@ function SWEP:StartReload()
 
     -- play 3p animation
     owner:DoAnimationEvent(self.ReloadGesture)
+	
+	-- stop looping sound
+	self:MW_StopLoopingSound()
 end
 
 function SWEP:FinishReload()
@@ -401,9 +466,17 @@ function SWEP:ShootProjectile()
     if not IsValid(owner) then return end
 
     local pos, ang = self:GetMuzzlePos()
-    if not pos or not ang then return end
-	
+	if not pos or not ang then return end
+
+	-- use player's aim
 	ang = owner:EyeAngles()
+
+	-- apply cone spread
+	if self.Cone and self.Cone > 0 then
+		local cone = math.rad(self.Cone)
+		local rand = VectorRand():GetNormalized() * math.tan(cone)
+		ang = (ang:Forward() + rand):Angle()
+	end
 	
 	pos, blocked = ResolveMuzzleCollision(owner, pos)
 
@@ -512,7 +585,26 @@ function SWEP:GetMuzzlePos()
 end
 
 function SWEP:Think()
+	local owner = self:GetOwner()
+	if not IsValid(owner) then return end
+	
     if self.Reloading and CurTime() >= self.ReloadEnd then
         self:FinishReload()
     end
+	
+	if self.LoopShootingSound then
+		if owner:KeyPressed(IN_ATTACK) and self:CanPrimaryAttack() then
+			self:PlayShootSound()
+		elseif not self:CanPrimaryAttack() then
+			self:MW_StopLoopingSound()
+		end
+		
+		self:Think_SoundSystem()
+	end
+	
+	if CLIENT then
+		if not self:GetOwner():KeyDown(IN_ATTACK) then
+			self:StopMuzzleEffect()
+		end
+	end
 end

@@ -6,6 +6,8 @@ if CLIENT then
             surface.PlaySound("crit_hit.wav")
         elseif critState == 1 then
             surface.PlaySound("ui/hitsound.wav")
+		else
+			surface.PlaySound("phx/eggcrack.wav")
         end
     end)
 end

@@ -59,6 +59,11 @@ if CLIENT then
 		if not Using3PBase(ply) then return end
 
 		local dt = FrameTime()
+		
+		-- initialize camAng on first frame
+		if camAng.p == 0 and camAng.y == 0 and camAng.r == 0 then
+			camAng:Set(ply:EyeAngles())
+		end
 
 		-- smooth base angle
 		local target = ply:EyeAngles()

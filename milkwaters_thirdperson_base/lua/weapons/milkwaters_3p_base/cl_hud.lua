@@ -237,13 +237,15 @@ function SWEP:DrawAmmoArc(x, y)
 	local tickCount = clipMax
 	
 	local maxSpacing = 10
-	local spacingFrac = math.Clamp((41 - tickCount) / 41, 0.2, 1)
+	local minimumTickSpacing = 0.2
+	if clipMax > 40 then
+		minimumTickSpacing = 0
+	end
+	
+	local spacingFrac = math.Clamp((41 - tickCount) / 41, minimumTickSpacing, 1)
 	local spacing = maxSpacing * spacingFrac
 
-	local totalSpacing = 0
-	if tickCount <= 40 then
-		totalSpacing = (tickCount - 1) * spacing
-	end
+	local totalSpacing = (tickCount - 1) * spacing
 
 	local usableArc = arcSize - totalSpacing
 	local tickFill = usableArc / tickCount
