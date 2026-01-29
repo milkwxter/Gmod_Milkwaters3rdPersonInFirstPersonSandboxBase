@@ -10,7 +10,7 @@ SWEP.IconOverride = "weapons/mw_family_business.png"
 
 SWEP.WorldModel = "models/weapons/c_models/c_russian_riot/c_russian_riot.mdl"
 
-SWEP.HandOffset_Pos = Vector(1, -1, -1) -- forward, right, up
+SWEP.HandOffset_Pos = Vector(4, -1, -1) -- forward, right, up
 SWEP.HandOffset_Ang = Angle(0, 0, 180) -- pitch, yaw, roll
 
 SWEP.MuzzleOffset_Pos = Vector(40, 0, 5) -- forward, right, up

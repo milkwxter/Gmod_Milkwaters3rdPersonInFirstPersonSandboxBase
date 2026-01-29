@@ -200,30 +200,31 @@ function SWEP:PrimaryAttack()
 	
     if SERVER then
         self:EjectCasing()
-		self:DoMuzzleEffect()
     end
+	
+	if CLIENT or game.SinglePlayer() then
+		self:DoMuzzleEffect()
+	end
 end
 
-if SERVER then
-    function SWEP:DoMuzzleEffect()
-        if self.MuzzleEffect == "" then return end
+function SWEP:DoMuzzleEffect()
+	if self.MuzzleEffect == "" then return end
 
-        local startPos, ang = self:GetMuzzlePos()
-        if not startPos or not ang then return end
+	local startPos, ang = self:GetMuzzlePos()
+	if not startPos or not ang then return end
 
-        local att = self:LookupAttachment("muzzle") or 1
+	local att = self:LookupAttachment("muzzle") or 1
 
-        -- one-shot
-        if not self.MuzzleEffectStaysWhileFiring then
-            ParticleEffect(self.MuzzleEffect, startPos, ang, self)
-            return
-        end
+	-- one-shot
+	if not self.MuzzleEffectStaysWhileFiring then
+		ParticleEffect(self.MuzzleEffect, startPos, ang, self)
+		return
+	end
 
-        -- looping
-        if not IsValid(self.MuzzleLoop) then
-            self:CallOnClient("DoMuzzleEffect_Looping", att)
-        end
-    end
+	-- looping
+	if not IsValid(self.MuzzleLoop) then
+		self:CallOnClient("DoMuzzleEffect_Looping", att)
+	end
 end
 
 if CLIENT then

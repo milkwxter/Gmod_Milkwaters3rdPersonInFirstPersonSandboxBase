@@ -1,7 +1,9 @@
 if SERVER then
 	AddCSLuaFile()
 	game.AddParticles( "particles/explosion.pcf" )
+	game.AddParticles( "particles/rockettrail.pcf" )
 	PrecacheParticleSystem("ExplosionCore_MidAir")
+	PrecacheParticleSystem("rockettrail")
 end
 
 DEFINE_BASECLASS("base_anim")
@@ -23,8 +25,6 @@ function ENT:Initialize()
         self:SetMoveType(MOVETYPE_VPHYSICS)
         self:SetSolid(SOLID_VPHYSICS)
         self:SetCollisionGroup(COLLISION_GROUP_PROJECTILE)
-		
-		ParticleEffectAttach(self.TrailEffect, PATTACH_ABSORIGIN_FOLLOW, self, 0)
 
         local phys = self:GetPhysicsObject()
         if IsValid(phys) then
@@ -34,6 +34,10 @@ function ENT:Initialize()
 
         self.Radius = 169
     end
+	
+	if CLIENT or game.SinglePlayer() then
+		ParticleEffectAttach(self.TrailEffect, PATTACH_ABSORIGIN_FOLLOW, self, 0)
+	end
 end
 
 function ENT:PhysicsCollide(data, phys)

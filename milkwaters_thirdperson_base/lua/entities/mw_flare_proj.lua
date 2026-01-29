@@ -1,7 +1,7 @@
 if SERVER then
 	AddCSLuaFile()
-	game.AddParticles( "particles/explosion.pcf" )
-	PrecacheParticleSystem("ExplosionCore_MidAir")
+	game.AddParticles( "particles/rockettrail.pcf" )
+	PrecacheParticleSystem("flaregun_trail_red")
 end
 
 DEFINE_BASECLASS("base_anim")
@@ -12,9 +12,6 @@ ENT.Spawnable = false
 
 ENT.TrailEffect = "flaregun_trail_red"
 
-local impactEffect = "ExplosionCore_MidAir"
-local explosionSound = "weapons/explode1.wav"
-
 function ENT:Initialize()
     if SERVER then
         self:SetModel("models/weapons/w_models/w_flaregun_shell.mdl")
@@ -23,8 +20,6 @@ function ENT:Initialize()
         self:SetMoveType(MOVETYPE_VPHYSICS)
         self:SetSolid(SOLID_VPHYSICS)
         self:SetCollisionGroup(COLLISION_GROUP_PROJECTILE)
-		
-		ParticleEffectAttach(self.TrailEffect, PATTACH_ABSORIGIN_FOLLOW, self, 0)
 
         local phys = self:GetPhysicsObject()
         if IsValid(phys) then
@@ -32,6 +27,10 @@ function ENT:Initialize()
             phys:SetMass(1)
         end
     end
+	
+	if CLIENT or game.SinglePlayer() then
+		ParticleEffectAttach(self.TrailEffect, PATTACH_ABSORIGIN_FOLLOW, self, 0)
+	end
 end
 
 function ENT:PhysicsCollide(data, phys)
