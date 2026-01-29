@@ -15,7 +15,7 @@ SWEP.HandOffset_Ang = Angle(0, 0, 180) -- pitch, yaw, roll
 
 SWEP.MuzzleOffset_Pos = Vector(40, 0, 5) -- forward, right, up
 SWEP.MuzzleOffset_Ang = Angle(0, 0, 0) -- pitch, yaw, roll
-SWEP.MuzzleEffect = "MuzzleEffect"
+SWEP.MuzzleEffect = "muzzle_shotgun"
 
 SWEP.SoundShootPrimary = "weapons/family_business_shoot.wav"
 SWEP.HoldType = "shotgun"

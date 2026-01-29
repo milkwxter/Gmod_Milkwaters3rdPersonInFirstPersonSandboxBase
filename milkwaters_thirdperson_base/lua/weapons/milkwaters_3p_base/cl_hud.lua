@@ -214,31 +214,42 @@ function SWEP:DrawAmmoArc(x, y)
 	if not IsValid(owner) then return end
 
 	local clip = self:Clip1()
-	local max  = self.Primary.ClipSize
-	if max <= 0 then return end
+	local clipMax  = self.Primary.ClipSize
+	if clipMax <= 0 then return end
 	
 	local minThickness = 3
 	local maxThickness = 22
 
 	-- scale thickness
-	local thickness = Lerp( math.Clamp(max / 30, 0, 1), maxThickness, minThickness )
+	local thickness = Lerp( math.Clamp(clipMax / 30, 0, 1), maxThickness, minThickness )
 
 	local tickLength = 12
 	local innerRadius = 50
 	local outerRadius = innerRadius + tickLength
 	
-	local arcSize = 120
-
-	-- center the arc around 0°
+	local arcSize = 135
+	
 	local arcStart = -arcSize * 0.5
 	local arcEnd =  arcSize * 0.5
 	
-	local tickArc = arcSize / max
-	local tickSpacing = tickArc * 0.5
-	local tickFill = tickArc - tickSpacing
+	local tickArc = arcSize / clipMax
 
-	for i = 1, max do
-		local startAng = arcStart + (i - 1) * tickArc
+	local tickCount = clipMax
+	
+	local maxSpacing = 10
+	local spacingFrac = math.Clamp((41 - tickCount) / 41, 0.2, 1)
+	local spacing = maxSpacing * spacingFrac
+
+	local totalSpacing = 0
+	if tickCount <= 40 then
+		totalSpacing = (tickCount - 1) * spacing
+	end
+
+	local usableArc = arcSize - totalSpacing
+	local tickFill = usableArc / tickCount
+
+	for i = 1, clipMax do
+		local startAng = arcStart + (i - 1) * (tickFill + spacing)
 		local endAng   = startAng + tickFill
 
 		local color
@@ -248,61 +259,12 @@ function SWEP:DrawAmmoArc(x, y)
 			color = Color(247, 229, 198, 40)
 		end
 
-		drawDonutSlice(
-			x, y,
-			innerRadius,
-			outerRadius,
-			startAng,
-			endAng,
-			nil,
-			color
-		)
+		drawDonutSlice(x, y, innerRadius, outerRadius, startAng, endAng, nil, color)
 	end
 end
 
 function SWEP:DrawCrosshairHUD(x, y)
-	local cone = self.Cone
-
-	local baseGap = math.max(0.2, 100 * cone)
-	local coneGap = cone * 300
-	local gap = baseGap + coneGap
-
-	local length = 8
-	local thickness = 1
-	
-	surface.SetDrawColor(255, 255, 255, 255)
-
-	draw.NoTexture()
-
-	-- left
-	surface.DrawPoly({
-		{x = x - gap - length, y = y - thickness},
-		{x = x - gap,          y = y - thickness},
-		{x = x - gap,          y = y + thickness},
-		{x = x - gap - length, y = y + thickness},
-	})
-
-	-- right
-	surface.DrawPoly({
-		{x = x + gap,          y = y - thickness},
-		{x = x + gap + length, y = y - thickness},
-		{x = x + gap + length, y = y + thickness},
-		{x = x + gap,          y = y + thickness},
-	})
-
-	-- top
-	surface.DrawPoly({
-		{x = x - thickness, y = y - gap - length},
-		{x = x + thickness, y = y - gap - length},
-		{x = x + thickness, y = y - gap},
-		{x = x - thickness, y = y - gap},
-	})
-
-	-- bottom
-	surface.DrawPoly({
-		{x = x - thickness, y = y + gap},
-		{x = x + thickness, y = y + gap},
-		{x = x + thickness, y = y + gap + length},
-		{x = x - thickness, y = y + gap + length},
-	})
+	local pink = Color(0, 255, 0)
+	surface.DrawCircle(x, y, 4, pink)
+	surface.DrawCircle(x, y, 5, pink)
 end

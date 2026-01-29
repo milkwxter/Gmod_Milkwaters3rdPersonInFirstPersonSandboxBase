@@ -64,7 +64,7 @@ SWEP.HandOffset_Ang = Angle(0, 0, 0) -- pitch, yaw, roll
 
 SWEP.MuzzleOffset_Pos = Vector(0, 0, 0) -- forward, right, up
 SWEP.MuzzleOffset_Ang = Angle(0, 0, 0) -- pitch, yaw, roll
-SWEP.MuzzleEffect = "MuzzleEffect"
+SWEP.MuzzleEffect = "muzzle_shotgun"
 
 local function MW_Using3PBase(ply)
     local wep = ply:GetActiveWeapon()
@@ -167,11 +167,9 @@ function SWEP:PrimaryAttack()
     if not startPos or not ang then return end
 	
     if SERVER then
-        local ed = EffectData()
-        ed:SetOrigin(startPos)
-        ed:SetAngles(ang)
-        util.Effect(self.MuzzleEffect or "MuzzleEffect", ed, true, true)
-
+		if not self.MuzzleEffect == "" then
+			ParticleEffect(self.MuzzleEffect, startPos, ang, nil)
+		end
         self:EjectCasing()
     end
 end
