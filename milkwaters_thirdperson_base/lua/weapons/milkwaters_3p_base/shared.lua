@@ -6,6 +6,7 @@ if SERVER then
 	AddCSLuaFile("cl_hud.lua")
 	AddCSLuaFile("cl_camera.lua")
 	AddCSLuaFile("cl_damage_sounds.lua")
+	AddCSLuaFile("sh_render.lua")
 	
 	-- add fonts
 	resource.AddFile("resource/fonts/TF2.ttf")
@@ -22,6 +23,7 @@ if CLIENT then
 	include("cl_hud.lua")
 	include("cl_camera.lua")
 	include("cl_damage_sounds.lua")
+	include("sh_render.lua")
 end
 
 SWEP.PrintName = "Base Weapon"
@@ -63,8 +65,6 @@ SWEP.HandOffset_Ang = Angle(0, 0, 0) -- pitch, yaw, roll
 SWEP.MuzzleOffset_Pos = Vector(0, 0, 0) -- forward, right, up
 SWEP.MuzzleOffset_Ang = Angle(0, 0, 0) -- pitch, yaw, roll
 SWEP.MuzzleEffect = "MuzzleEffect"
-
-local handWepModel = nil
 
 local function MW_Using3PBase(ply)
     local wep = ply:GetActiveWeapon()
@@ -435,72 +435,3 @@ function SWEP:GetMuzzlePos()
 
     return pos, ang
 end
-
-if CLIENT then
-    -- handle the weapon model
-	hook.Add("Think", "mw_3p_handmodel_manage", function()
-		local ply = LocalPlayer()
-		local wep = ply:GetActiveWeapon()
-
-		-- not using base
-		if not (IsValid(wep) and wep.Base == "milkwaters_3p_base") then
-			if IsValid(handWepModel) then
-				handWepModel:Remove()
-				handWepModel = nil
-			end
-			return
-		end
-
-		-- no model yet
-		if not IsValid(handWepModel) then
-			handWepModel = ClientsideModel(wep.WorldModel, RENDERGROUP_OPAQUE)
-			handWepModel:SetNoDraw(true)
-			return
-		end
-
-		-- worldmodel changed
-		if handWepModel:GetModel() ~= wep.WorldModel then
-			handWepModel:Remove()
-			handWepModel = ClientsideModel(wep.WorldModel, RENDERGROUP_OPAQUE)
-			handWepModel:SetNoDraw(true)
-		end
-	end)
-
-    -- draw gun in your hand
-    hook.Add("PostDrawOpaqueRenderables", "mw_3p_draw_hand_weapon", function()
-		local ply = LocalPlayer()
-		local wep = ply:GetActiveWeapon()
-
-		if not (IsValid(wep) and wep.Base == "milkwaters_3p_base") then return end
-		if not IsValid(handWepModel) then return end
-		
-		local handPos = ply:EyePos()
-		local handAng = ply:EyeAngles()
-
-		local bone = ply:LookupBone("ValveBiped.Bip01_R_Hand")
-		if bone then
-			ply:SetupBones()
-			local bpos, bang = ply:GetBonePosition(bone)
-			if bpos and bang then
-				handPos = bpos
-				handAng = bang
-			end
-		end
-		
-		local finalPos, finalAng = LocalToWorld(
-			wep.HandOffset_Pos or vector_origin,
-			wep.HandOffset_Ang or angle_zero,
-			handPos,
-			handAng
-		)
-		
-		handWepModel:SetPos(finalPos)
-		handWepModel:SetAngles(finalAng)
-		handWepModel:DrawModel()
-	end)
-	
-	function SWEP:DrawWorldModel()
-		self:SetNoDraw(true)
-	end
-end
-

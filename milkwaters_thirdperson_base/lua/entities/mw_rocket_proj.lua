@@ -53,10 +53,20 @@ function ENT:Detonate(pos, normal)
 	-- client effect
 	ParticleEffect(impactEffect, pos, normal:Angle(), nil)
 	
+	-- server decal
+	self:MakeScorchDecal(pos, normal)
+	
 	-- damage
 	self:DoExplosionDamage(pos)
 	
 	self:Remove()
+end
+
+function ENT:MakeScorchDecal(pos, normal)
+    local startPos = pos + normal * 2
+    local endPos   = pos - normal * 2
+
+    util.Decal("Scorch", startPos, endPos, self)
 end
 
 function ENT:DoExplosionDamage(pos)
@@ -76,6 +86,11 @@ function ENT:DoExplosionDamage(pos)
 
             -- half damage at edge
             local damage = Lerp(frac, dmgAmount * 0.5, dmgAmount)
+			
+			-- half damage for attacker
+			if ent == attacker then
+				damage = damage * 0.5
+			end
 			
 			-- modify the damage more
 			if IsValid(wep) and wep.ModifyDamage then
