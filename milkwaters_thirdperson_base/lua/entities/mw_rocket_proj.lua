@@ -10,8 +10,9 @@ ENT.Type = "anim"
 ENT.PrintName = "MW Rocket"
 ENT.Spawnable = false
 
+ENT.TrailEffect = "rockettrail"
+
 local impactEffect = "ExplosionCore_MidAir"
-local trailEffect = "rockettrail"
 local explosionSound = "weapons/explode1.wav"
 
 function ENT:Initialize()
@@ -23,7 +24,7 @@ function ENT:Initialize()
         self:SetSolid(SOLID_VPHYSICS)
         self:SetCollisionGroup(COLLISION_GROUP_PROJECTILE)
 		
-		ParticleEffectAttach(trailEffect, PATTACH_ABSORIGIN_FOLLOW, self, 0)
+		ParticleEffectAttach(self.TrailEffect, PATTACH_ABSORIGIN_FOLLOW, self, 0)
 
         local phys = self:GetPhysicsObject()
         if IsValid(phys) then

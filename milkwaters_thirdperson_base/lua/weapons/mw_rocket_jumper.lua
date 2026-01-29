@@ -26,7 +26,7 @@ SWEP.Primary.DefaultClip = 4
 SWEP.Primary.Ammo = "Pistol"
 
 SWEP.Projectile = true
-SWEP.ProjectileClass = "mw_rocket_proj"
+SWEP.ProjectileClass = "mw_rocket_jumper_proj"
 SWEP.ProjectileSpeed = 1100
 SWEP.ProjectileGravity = false
 
