@@ -172,7 +172,7 @@ function SWEP:PrimaryAttack()
     if not startPos or not ang then return end
 	
     if SERVER then
-		if not self.MuzzleEffect == "" then
+		if self.MuzzleEffect ~= "" then
 			ParticleEffect(self.MuzzleEffect, startPos, ang, nil)
 		end
         self:EjectCasing()
@@ -281,7 +281,16 @@ end
 
 function SWEP:CanReload()
     if self.Reloading then return false end
+
+    -- clip already full
     if self:Clip1() >= self.Primary.ClipSize then return false end
+
+    local owner = self:GetOwner()
+    if not IsValid(owner) then return false end
+
+    -- no reserve ammo
+    if owner:GetAmmoCount(self.Primary.Ammo) <= 0 then return false end
+
     return true
 end
 

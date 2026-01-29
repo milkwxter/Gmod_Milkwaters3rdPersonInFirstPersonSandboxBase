@@ -32,7 +32,7 @@ function ENT:Initialize()
             phys:SetMass(2)
         end
 
-        self.Radius = 100
+        self.Radius = 169
     end
 end
 
@@ -125,8 +125,7 @@ function ENT:DoExplosionDamage(pos)
             dmg:SetAttacker(attacker)
             dmg:SetInflictor(self)
             dmg:SetDamagePosition(pos)
-
-            local oldHP = ent:Health()
+			
             ent:TakeDamageInfo(dmg)
 		
 			-- add time of hit for the damage numbers hook (trust me)
@@ -151,12 +150,24 @@ function ENT:DoExplosionDamage(pos)
 
 			-- apply to players
 			ent:SetVelocity(ent:GetVelocity() + dir * force)
-
-            -- gibbing logic
-            if ent:IsPlayer() and (damage > oldHP + 10) then
-                ent:EmitSound("physics/flesh/flesh_bloody_break.wav")
-                -- you can spawn gibs here if you want
-            end
         end
+		
+		-- other stuff gets knocked around
+		if ent:GetMoveType() == MOVETYPE_VPHYSICS then
+			local phys = ent:GetPhysicsObject()
+			if IsValid(phys) then
+				local dist = ent:GetPos():Distance(pos)
+				local frac = math.Clamp(1 - (dist / self.Radius), 0, 1)
+				
+				local dir = (ent:GetPos() - pos):GetNormalized()
+				
+				local force = frac * 100000
+
+				-- scale by mass so heavy props move less
+				force = force / math.max(phys:GetMass() * 0.1, 1)
+
+				phys:ApplyForceCenter(dir * force)
+			end
+		end
     end
 end
