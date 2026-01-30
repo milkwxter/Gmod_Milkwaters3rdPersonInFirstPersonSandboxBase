@@ -33,6 +33,11 @@ function ENT:Initialize()
         end
 
         self.Radius = 169
+		
+		-- get the weapon that fired the rocket
+		local attacker = self:GetOwner()
+		self.Weapon = attacker.GetActiveWeapon and attacker:GetActiveWeapon()
+		self.DmgAmount = self.Weapon.Primary.Damage
     end
 	
 	if CLIENT or game.SinglePlayer() then
@@ -83,10 +88,6 @@ function ENT:DoExplosionDamage(pos)
     if not IsValid(attacker) then attacker = self end
 
     local entities = ents.FindInSphere(pos, self.Radius)
-	
-	-- get the weapon that fired the rocket
-	local wep = attacker.GetActiveWeapon and attacker:GetActiveWeapon()
-	local dmgAmount = wep.Primary.Damage
 
     for _, ent in ipairs(entities) do
         if ent:IsPlayer() or ent:IsNPC() then
@@ -94,7 +95,7 @@ function ENT:DoExplosionDamage(pos)
             local frac = math.Clamp(1 - (dist / self.Radius), 0, 1)
 
             -- half damage at edge
-            local damage = Lerp(frac, dmgAmount * 0.5, dmgAmount)
+            local damage = Lerp(frac, self.DmgAmount * 0.5, self.DmgAmount)
 			
 			-- half damage for attacker
 			if ent == attacker then
@@ -102,7 +103,7 @@ function ENT:DoExplosionDamage(pos)
 			end
 			
 			-- modify the damage more
-			if IsValid(wep) and wep.ModifyDamage then
+			if IsValid(self.Weapon) and self.Weapon.ModifyDamage then
 				local dmginfo = DamageInfo()
 				dmginfo:SetDamage(damage)
 				
@@ -112,7 +113,7 @@ function ENT:DoExplosionDamage(pos)
 					HitNormal = Vector(0,0,1)
 				}
 
-				damage, isMiniCrit, isFullCrit = wep:ModifyDamage(attacker, fakeTr, dmginfo)
+				damage, isMiniCrit, isFullCrit = self.Weapon:ModifyDamage(attacker, fakeTr, dmginfo)
 				
 				-- increase damage based on crits
 				if isFullCrit then

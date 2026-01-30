@@ -70,6 +70,11 @@ function ENT:Initialize()
 			phys:EnableGravity(true)
 			phys:EnableDrag(true)
         end
+		
+		-- get the weapon that fired the syringe
+		local attacker = self:GetOwner()
+		self.Weapon = attacker.GetActiveWeapon and attacker:GetActiveWeapon()
+		self.DmgAmount = self.Weapon.Primary.Damage
     end
 end
 
@@ -165,8 +170,8 @@ if SERVER then
 		if not IsValid(owner) then owner = self end
 
 		-- get the weapon that fired the syringe
-		local wep = owner.GetActiveWeapon and owner:GetActiveWeapon()
-		local dmgAmount = wep.Primary.Damage
+		local wep = self.Weapon
+		local dmgAmount = self.DmgAmount
 		local isMiniCrit = false
 		local isFullCrit = false
 

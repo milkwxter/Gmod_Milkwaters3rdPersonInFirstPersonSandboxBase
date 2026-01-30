@@ -15,6 +15,7 @@ AddCSLuaFile("cl_damage_numbers.lua")
 AddCSLuaFile("cl_hud.lua")
 AddCSLuaFile("cl_camera.lua")
 AddCSLuaFile("cl_damage_sounds.lua")
+AddCSLuaFile("cl_pyrovision.lua")
 AddCSLuaFile("sh_render.lua")
 AddCSLuaFile("sh_sound.lua")
 
@@ -24,6 +25,7 @@ if CLIENT then
 	include("cl_hud.lua")
 	include("cl_camera.lua")
 	include("cl_damage_sounds.lua")
+	include("cl_pyrovision.lua")
 end
 
 -- rest of the files are for everyone
@@ -79,6 +81,8 @@ SWEP.MuzzleOffset_Pos = Vector(0, 0, 0) -- forward, right, up
 SWEP.MuzzleOffset_Ang = Angle(0, 0, 0) -- pitch, yaw, roll
 SWEP.MuzzleEffect = "muzzle_shotgun"
 SWEP.MuzzleEffectStaysWhileFiring = false
+
+SWEP.EnablePyroland = false
 
 local function MW_Using3PBase(ply)
     local wep = ply:GetActiveWeapon()
@@ -162,11 +166,6 @@ end
 
 function SWEP:PrimaryAttack()
     if not self:CanPrimaryAttack() then return end
-
-    -- singleplayer: ensure client also runs PrimaryAttack
-    if game.SinglePlayer() then
-        self:CallOnClient("PrimaryAttack")
-    end
 
     -- fire
 	if self.Projectile then
@@ -425,6 +424,8 @@ hook.Add("EntityTakeDamage", "mw_damage_numbers", function(ent, dmginfo)
 
     local att = tag.attacker
     if not (IsValid(att) and att:IsPlayer()) then return end
+	
+	if not ent:Alive() then return end
 
     net.Start("mw_damage_number")
     net.WriteFloat(dmginfo:GetDamage())
@@ -607,5 +608,11 @@ function SWEP:Think()
 		if not self:GetOwner():KeyDown(IN_ATTACK) then
 			self:StopMuzzleEffect()
 		end
+	end
+end
+
+function SWEP:DrawHUDBackground()
+	if self.EnablePyroland then
+		self:DrawHUDPyrovision()
 	end
 end

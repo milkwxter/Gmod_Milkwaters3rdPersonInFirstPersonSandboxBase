@@ -26,6 +26,11 @@ function ENT:Initialize()
             phys:Wake()
             phys:SetMass(1)
         end
+		
+		-- get the weapon that fired the flare
+		local attacker = self:GetOwner()
+		self.Weapon = attacker.GetActiveWeapon and attacker:GetActiveWeapon()
+		self.DmgAmount = self.Weapon.Primary.Damage
     end
 	
 	if CLIENT or game.SinglePlayer() then
@@ -66,8 +71,10 @@ function ENT:DoIgnite(ent, pos, normal)
     ent:Ignite(6)
 	
 	-- deal damage
-	local wep = attacker.GetActiveWeapon and attacker:GetActiveWeapon()
-	local dmgAmount = wep.Primary.Damage
+	local wep = self.Weapon
+	local dmgAmount = self.DmgAmount
+	local isMiniCrit = false
+	local isFullCrit = false
 	
 	-- modify the damage
 	if IsValid(wep) and wep.ModifyDamage then

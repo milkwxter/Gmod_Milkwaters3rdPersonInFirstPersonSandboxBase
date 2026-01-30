@@ -48,18 +48,4 @@ SWEP.Primary.NumShots = 1
 SWEP.Cone = 3
 SWEP.Primary.Recoil = 0
 
-if CLIENT then
-	local pyroBorder = Material("hud/pyro_pink_border01")
-    function SWEP:DrawHUDBackground()
-        if not pyroBorder then return end
-
-        local w, h = ScrW(), ScrH()
-
-        surface.SetMaterial(pyroBorder)
-        surface.SetDrawColor(255, 209, 255)
-
-        -- fullscreen overlay
-        surface.DrawTexturedRectRotated(ScrW() / 2, ScrH() / 2, ScrW(), ScrH(), 0)
-        surface.DrawTexturedRectRotated(ScrW() / 2, ScrH() / 2, ScrW(), ScrH(), 180)
-    end
-end
+SWEP.EnablePyroland = true
