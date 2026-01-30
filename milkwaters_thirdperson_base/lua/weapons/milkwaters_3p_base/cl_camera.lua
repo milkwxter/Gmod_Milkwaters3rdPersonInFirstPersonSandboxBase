@@ -18,9 +18,12 @@ if CLIENT then
 	local rollVel = 0
 
 	-- spring tuning
-	local recoilFreq = 12     -- higher = snappier
-	local rollFreq   = 10
-	local damping    = 1      -- critically damped
+	local recoilFreq = 12
+	local rollFreq = 10
+	local damping = 1
+	
+	-- make sure we dont go crazy while tabbed out
+	local lostFocus = false
 
 	function MW_AddRecoil(p, y)
 		recoil.p = recoil.p + p
@@ -59,6 +62,7 @@ if CLIENT then
 		if not Using3PBase(ply) then return end
 
 		local dt = FrameTime()
+		if dt > 0.05 then dt = 0.05 end
 		
 		-- initialize camAng on first frame
 		if camAng.p == 0 and camAng.y == 0 and camAng.r == 0 then
@@ -100,5 +104,24 @@ if CLIENT then
 
 	hook.Add("PreDrawViewModel", "mw_3p_hide_vm", function(vm, ply)
 		if Using3PBase(ply) then return true end
+	end)
+	
+	-- stop going crazy while tabbed out
+	hook.Add("Think", "mw_3p_focus_reset", function()
+		if not system.HasFocus() then
+			lostFocus = true
+			return
+		end
+
+		if lostFocus then
+			lostFocus = false
+
+			-- reset camera springs
+			camAng:Set(LocalPlayer():EyeAngles())
+			recoil = Angle(0,0,0)
+			recoilVel = Angle(0,0,0)
+			roll = 0
+			rollVel = 0
+		end
 	end)
 end

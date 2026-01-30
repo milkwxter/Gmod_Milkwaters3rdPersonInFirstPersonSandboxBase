@@ -118,6 +118,7 @@ end
 
 function SWEP:Initialize()
     self:SetHoldType(self.HoldType or "pistol")
+	if CLIENT then self:CreateWorldModel() end
 end
 
 function SWEP:Deploy()
@@ -126,6 +127,8 @@ function SWEP:Deploy()
 		net.WriteFloat(CurTime() + 2)
 		net.Send(self:GetOwner())
 	end
+	
+	if CLIENT then self:CreateWorldModel() end
 	
     return true
 end
@@ -229,16 +232,35 @@ function SWEP:DoMuzzleEffect()
 
 	-- looping
 	if not IsValid(self.MuzzleLoop) then
-		self:CallOnClient("DoMuzzleEffect_Looping", att)
+		if CLIENT then
+			self:DoMuzzleEffect_Looping(att)
+		end
+		if game.SinglePlayer() then
+			self:CallOnClient("DoMuzzleEffect_Looping", att)
+		end
 	end
 end
 
 if CLIENT then
-    function SWEP:DoMuzzleEffect_Looping(att)
-        if not IsValid(self.MuzzleLoop) then
-            self.MuzzleLoop = CreateParticleSystem(self, self.MuzzleEffect, PATTACH_POINT, att)
-        end
-    end
+	function SWEP:CreateWorldModel()
+		if IsValid(self.WModel) then return end
+
+		self.WModel = ClientsideModel(self.WorldModel, RENDERGROUP_OPAQUE)
+		self.WModel:SetNoDraw(true)
+	end
+	
+    function SWEP:DoMuzzleEffect_Looping()
+		if not IsValid(self.WModel) then return end
+		if IsValid(self.MuzzleLoop) then return end
+
+		-- attach to the model
+		self.MuzzleLoop = CreateParticleSystem(
+			self.WModel,
+			self.MuzzleEffect,
+			PATTACH_ABSORIGIN_FOLLOW,
+			0
+		)
+	end
 
     function SWEP:StopMuzzleEffect()
         if IsValid(self.MuzzleLoop) then

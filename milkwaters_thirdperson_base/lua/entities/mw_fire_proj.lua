@@ -15,7 +15,7 @@ if SERVER then
     ENT.Speed = 1000
     ENT.Size = 2
 	
-	ENT._DebugDisplay = false
+	ENT._DebugDisplay = true
 
     function ENT:Initialize()
         self:SetMoveType(MOVETYPE_NONE)
@@ -25,10 +25,10 @@ if SERVER then
         self.DieTime = CurTime() + self.LifeTime
         self.LastPos = self:GetPos()
 
-        self:SetModel("models/hunter/blocks/cube025x025x025.mdl")
+        self:SetModel("models/hunter/misc/sphere025x025.mdl")
 		self:SetColor(Color(255, 100, 0))
 		self:SetMaterial("models/debug/debugwhite")
-		self:SetNoDraw(not _DebugDisplay)
+		self:SetNoDraw(not self._DebugDisplay)
     end
 
     function ENT:Think()
