@@ -28,6 +28,13 @@ if CLIENT then
 	include("cl_pyrovision.lua")
 end
 
+-- cache common particles
+if SERVER then
+    game.AddParticles("particles/muzzle_flash.pcf")
+    PrecacheParticleSystem("muzzle_shotgun")
+    PrecacheParticleSystem("muzzle_smg")
+end
+
 -- rest of the files are for everyone
 include("sh_render.lua")
 include("sh_sound.lua")

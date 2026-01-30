@@ -1,6 +1,5 @@
-if SERVER then AddCSLuaFile() end
-
-if CLIENT then
+if SERVER then
+	AddCSLuaFile()
     game.AddParticles("particles/flamethrower.pcf")
     PrecacheParticleSystem("_flamethrower_REAL")
 end
