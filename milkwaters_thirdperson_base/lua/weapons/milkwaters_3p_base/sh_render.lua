@@ -1,5 +1,7 @@
 -- sh_render.lua
 function SWEP:DrawWorldModel()
+	if CLIENT and self:GetZoomed() then return end
+	
     if not IsValid(self.WModel) then return end
 
     local owner = self:GetOwner()

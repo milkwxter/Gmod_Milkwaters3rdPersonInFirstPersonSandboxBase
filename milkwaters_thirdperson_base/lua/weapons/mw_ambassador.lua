@@ -32,7 +32,7 @@ SWEP.Primary.NumShots = 1
 SWEP.Cone = 0.02
 SWEP.Primary.Recoil = 6
 
--- mini crits if you got a head shot
+-- full crits if you got a head shot
 function SWEP:ModifyDamage(att, tr, dmginfo)
     -- get base damage + base crits
     local dmg, isMiniCrit, isFullCrit = self.BaseClass.ModifyDamage(self, att, tr, dmginfo)
