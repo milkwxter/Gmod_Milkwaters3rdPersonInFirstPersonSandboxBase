@@ -26,8 +26,8 @@ SWEP.Primary.DefaultClip = 50
 SWEP.Primary.Ammo = "Pistol"
 
 SWEP.Primary.Automatic = true
-SWEP.Primary.FireDelay = 0.14
-SWEP.Primary.Damage = 16
+SWEP.Primary.FireDelay = 0.1
+SWEP.Primary.Damage = 11
 SWEP.Primary.NumShots = 1
 SWEP.Cone = 0.05
 SWEP.Primary.Recoil = 4

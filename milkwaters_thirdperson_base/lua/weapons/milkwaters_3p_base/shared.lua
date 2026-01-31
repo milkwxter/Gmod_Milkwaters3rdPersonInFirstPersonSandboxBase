@@ -179,7 +179,9 @@ function SWEP:PrimaryAttack()
 
     -- fire
 	if self.Projectile then
-		self:ShootProjectile()
+		for i = 1, self.Primary.NumShots do
+			self:ShootProjectile()
+		end
 	else
 		self:ShootBullet(self.Primary.Damage, self.Primary.NumShots, self.Cone)
 	end
@@ -204,9 +206,6 @@ function SWEP:PrimaryAttack()
     end
 
     -- muzzle + casing effects
-    local startPos, ang = self:GetMuzzlePos()
-    if not startPos or not ang then return end
-	
     if SERVER then
         self:EjectCasing()
     end
@@ -233,10 +232,10 @@ function SWEP:DoMuzzleEffect()
 	-- looping
 	if not IsValid(self.MuzzleLoop) then
 		if CLIENT then
-			self:DoMuzzleEffect_Looping(att)
+			self:DoMuzzleEffect_Looping()
 		end
 		if game.SinglePlayer() then
-			self:CallOnClient("DoMuzzleEffect_Looping", att)
+			self:CallOnClient("DoMuzzleEffect_Looping")
 		end
 	end
 end
@@ -250,16 +249,13 @@ if CLIENT then
 	end
 	
     function SWEP:DoMuzzleEffect_Looping()
-		if not IsValid(self.WModel) then return end
 		if IsValid(self.MuzzleLoop) then return end
+		
+		local att = self:LookupAttachment("muzzle")
+		if not att or att <= 0 then att = 1 end
 
 		-- attach to the model
-		self.MuzzleLoop = CreateParticleSystem(
-			self.WModel,
-			self.MuzzleEffect,
-			PATTACH_ABSORIGIN_FOLLOW,
-			0
-		)
+		self.MuzzleLoop = CreateParticleSystem( self.WModel, self.MuzzleEffect, PATTACH_POINT_FOLLOW, att )
 	end
 
     function SWEP:StopMuzzleEffect()
@@ -499,7 +495,7 @@ function SWEP:ShootProjectile()
     local pos, ang = self:GetMuzzlePos()
 	if not pos or not ang then return end
 
-	-- use player's aim
+	-- use players aim
 	ang = owner:EyeAngles()
 
 	-- apply cone spread

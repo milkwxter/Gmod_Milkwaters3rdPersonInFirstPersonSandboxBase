@@ -19,20 +19,12 @@ function SWEP:DrawWorldModel()
 				-- clientside model
                 self.WModel:SetPos(pos)
                 self.WModel:SetAngles(ang)
+				self.WModel:DrawModel()
 				
 				-- serverside model
 				self:SetRenderOrigin(pos)
 				self:SetRenderAngles(ang)
             end
         end
-    end
-
-    self.WModel:DrawModel()
-	self:DrawModel()
-
-    -- update looping muzzle effect
-    if IsValid(self.MuzzleLoop) then
-        local mpos = select(1, self:GetMuzzlePos())
-        self.MuzzleLoop:SetControlPoint(1, mpos)
     end
 end

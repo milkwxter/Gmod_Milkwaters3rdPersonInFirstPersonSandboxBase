@@ -37,12 +37,12 @@ SWEP.Primary.Ammo = "Pistol"
 
 SWEP.Projectile = true
 SWEP.ProjectileClass = "mw_fire_proj"
-SWEP.ProjectileSpeed = 1100
+SWEP.ProjectileSpeed = 1500
 SWEP.ProjectileGravity = false
 
 SWEP.Primary.Automatic = true
-SWEP.Primary.FireDelay = 0.03
+SWEP.Primary.FireDelay = 0.06
 SWEP.Primary.Damage = 7
-SWEP.Primary.NumShots = 1
+SWEP.Primary.NumShots = 3
 SWEP.Cone = 5
 SWEP.Primary.Recoil = 0
