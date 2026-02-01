@@ -1,3 +1,4 @@
+-- cl_pyrovision.lua
 if CLIENT then
 	local pyroBorder = Material("hud/pyro_pink_border01")
 	

@@ -1,3 +1,4 @@
+-- cl_damage_sounds.lua
 if CLIENT then
     net.Receive("mw_damage_sound", function()
         local critState = net.ReadUInt(2)  -- 0 normal, 1 mini, 2 full

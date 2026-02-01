@@ -1,3 +1,4 @@
+-- cl_sniper_dot.lua
 if CLIENT then
     local dotMat = Material("effects/sniperdot")
 
