@@ -4,6 +4,7 @@ if SERVER then
 	game.AddParticles( "particles/rockettrail.pcf" )
 	PrecacheParticleSystem("ExplosionCore_MidAir")
 	PrecacheParticleSystem("rockettrail")
+	util.AddNetworkString("mw_rocket_light")
 end
 
 DEFINE_BASECLASS("base_anim")
@@ -73,6 +74,11 @@ function ENT:Detonate(pos, normal)
 	-- damage
 	self:DoExplosionDamage(pos)
 	
+	-- dynamic light for clients
+	net.Start("mw_rocket_light")
+	net.WriteVector(pos)
+	net.Broadcast()
+	
 	self:Remove()
 end
 
@@ -91,6 +97,19 @@ function ENT:DoExplosionDamage(pos)
 
     for _, ent in ipairs(entities) do
         if ent:IsPlayer() or ent:IsNPC() then
+			-- los check
+			local tr = util.TraceLine({
+				start = pos,
+				endpos = ent:WorldSpaceCenter(),
+				filter = { self, attacker },
+				mask = MASK_SOLID_BRUSHONLY
+			})
+
+			-- if we hit something else, continue
+			if tr.Hit and tr.Entity ~= ent then
+				continue
+			end
+
             local dist = ent:GetPos():Distance(pos)
             local frac = math.Clamp(1 - (dist / self.Radius), 0, 1)
 
@@ -175,4 +194,22 @@ function ENT:DoExplosionDamage(pos)
 			end
 		end
     end
+end
+
+if CLIENT then
+    net.Receive("mw_rocket_light", function()
+        local pos = net.ReadVector()
+
+        local dlight = DynamicLight(0)
+        if dlight then
+            dlight.pos = pos
+            dlight.r = 255
+            dlight.g = 150
+            dlight.b = 50
+            dlight.brightness = 4
+            dlight.Decay = 800
+            dlight.Size = 200
+            dlight.DieTime = CurTime() + 1
+        end
+    end)
 end
