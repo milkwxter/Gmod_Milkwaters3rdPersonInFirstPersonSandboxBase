@@ -195,6 +195,8 @@ end
 
 function SWEP:PrimaryAttack()
     if not self:CanPrimaryAttack() then return end
+	
+    local owner = self:GetOwner()
 
     -- fire
 	if self.Projectile then
@@ -211,7 +213,6 @@ function SWEP:PrimaryAttack()
 		self:EmitSound(self.SoundShootPrimary)
 	end
     self:SetNextPrimaryFire(CurTime() + (self.Primary.FireDelay or 0.1))
-    local owner = self:GetOwner()
     if IsValid(owner) and self.PlayAttackAnim == true then
         owner:SetAnimation(PLAYER_ATTACK1)
     end
@@ -234,6 +235,13 @@ function SWEP:PrimaryAttack()
 	if CLIENT or game.SinglePlayer() then
 		self:DoMuzzleEffect()
 	end
+	
+	-- extra effect on shoot (not hit)
+	self:ExtraEffectOnShoot()
+end
+
+function SWEP:ExtraEffectOnShoot()
+	-- add logic here in child weapons
 end
 
 function SWEP:DoMuzzleEffect()
