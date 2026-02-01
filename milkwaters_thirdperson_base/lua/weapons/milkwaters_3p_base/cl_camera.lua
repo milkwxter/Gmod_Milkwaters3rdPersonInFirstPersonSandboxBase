@@ -121,6 +121,10 @@ if CLIENT then
 
         -- final FOV
         local outFOV = Lerp(zoomFrac, baseFOV, zoomFOV)
+		
+		-- store for other systems
+		ply.MW_CamPos = cpos
+		ply.MW_CamAng = cang
 
         return {
             origin = cpos,

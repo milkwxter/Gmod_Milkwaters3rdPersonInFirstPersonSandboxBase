@@ -35,6 +35,8 @@ SWEP.Primary.Recoil = 10
 SWEP.CanZoom = true
 SWEP.Zoomed = false
 SWEP.ZoomFOV = 20
+SWEP.ZoomCharge = true
+SWEP.ZoomDot = "effects/sniperdot"
 
 -- full crits if you got a head shot while zoomed
 function SWEP:ModifyDamage(att, tr, dmginfo)

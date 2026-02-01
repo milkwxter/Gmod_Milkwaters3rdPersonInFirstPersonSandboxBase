@@ -275,3 +275,38 @@ function SWEP:DrawCrosshairHUD(x, y)
 	surface.DrawCircle(x, y, 4, pink)
 	surface.DrawCircle(x, y, 5, pink)
 end
+
+function SWEP:DrawSniperScope()
+	DrawMaterialOverlay( "hud/scope_sniper_ul", -0.1 )
+end
+
+function SWEP:DrawSniperCharge()
+	local frac = self:GetZoomChargeProgress()
+	local w, h = ScrW(), ScrH()
+	local barW = w * 0.3
+	local barH = 12
+	local x = (w - barW) * 0.5
+	local y = h * 0.8
+	local zoomColor = Color(234, 192, 124, 255)
+	
+	-- background
+	surface.SetDrawColor(0, 0, 0, 180)
+	surface.DrawRect(x, y, barW, barH)
+	
+	-- fill
+	surface.SetDrawColor(zoomColor)
+	surface.DrawRect(x, y, barW * frac, barH)
+	
+	-- text
+	draw.SimpleTextOutlined(
+		"Charge Progress",
+		"MW_TF2Damage",
+		w / 2,
+		y - 20,
+		zoomColor,
+		TEXT_ALIGN_CENTER,
+		TEXT_ALIGN_CENTER,
+		2,
+		Color(55, 51, 49, alpha)
+	)
+end

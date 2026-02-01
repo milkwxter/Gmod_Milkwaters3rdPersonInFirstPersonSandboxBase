@@ -16,8 +16,10 @@ AddCSLuaFile("cl_hud.lua")
 AddCSLuaFile("cl_camera.lua")
 AddCSLuaFile("cl_damage_sounds.lua")
 AddCSLuaFile("cl_pyrovision.lua")
+AddCSLuaFile("cl_sniper_dot.lua")
 AddCSLuaFile("sh_render.lua")
 AddCSLuaFile("sh_sound.lua")
+AddCSLuaFile("sh_damage.lua")
 
 -- give clients certain files
 if CLIENT then
@@ -26,7 +28,13 @@ if CLIENT then
 	include("cl_camera.lua")
 	include("cl_damage_sounds.lua")
 	include("cl_pyrovision.lua")
+	include("cl_sniper_dot.lua")
 end
+
+-- rest of the files are for everyone
+include("sh_render.lua")
+include("sh_sound.lua")
+include("sh_damage.lua")
 
 -- cache common particles
 if SERVER then
@@ -34,10 +42,6 @@ if SERVER then
     PrecacheParticleSystem("muzzle_shotgun")
     PrecacheParticleSystem("muzzle_smg")
 end
-
--- rest of the files are for everyone
-include("sh_render.lua")
-include("sh_sound.lua")
 
 SWEP.PrintName = "Base Weapon"
 SWEP.Category = "Milkwater"
@@ -95,10 +99,12 @@ SWEP.CanZoom = false
 SWEP.Zoomed = false
 SWEP.ZoomFOV = 20
 SWEP.ZoomCharge = true
+SWEP.ZoomDot = "effects/sniperdot"
 
 function SWEP:SetupDataTables()
     self:NetworkVar("Bool", 0, "Zoomed")
 	self:NetworkVar("Float", 0, "ZoomChargeProgress")
+	self:NetworkVar("Vector", 0, "ZoomDotPos")
 end
 
 local function MW_Using3PBase(ply)
@@ -280,25 +286,6 @@ if CLIENT then
     end
 end
 
-function SWEP:ModifyDamage(att, tr, dmginfo)
-    local hit = tr.Entity
-    local dmg = dmginfo:GetDamage()
-	
-    local isMiniCrit = false
-	local isFullCrit = false
-
-    -- minicrits if the target is jarated
-    if IsValid(hit) and hit._JarateTimer then
-        isMiniCrit = true
-    end
-	
-    return dmg, isMiniCrit, isFullCrit
-end
-
-function SWEP:ExtraEffectOnHit(att, tr)
-	-- call me in the child weapon
-end
-
 function SWEP:ShootBullet(dmg, num, cone)
     local owner = self:GetOwner()
     if not IsValid(owner) then return end
@@ -427,53 +414,6 @@ function SWEP:FinishReload()
     self:SetClip1(self:Clip1() + toLoad)
     owner:SetAmmo(ammo - toLoad, self.Primary.Ammo)
 end
-
-hook.Add("ScalePlayerDamage", "mw_disable_hitgroups_player", function(ply, hitgroup, dmginfo)
-	local attacker = dmginfo:GetAttacker()
-	if not IsValid(attacker) or not attacker:IsPlayer() then return end
-	
-	local wep = attacker:GetActiveWeapon()
-	if not IsValid(wep) then return end
-	
-    -- remove all hitgroup scaling for my guns
-	if wep.Base == "milkwaters_3p_base" then
-		return false
-	end
-end)
-
-hook.Add("ScaleNPCDamage", "mw_disable_hitgroups_npc", function(ply, hitgroup, dmginfo)
-	local attacker = dmginfo:GetAttacker()
-	if not IsValid(attacker) or not attacker:IsPlayer() then return end
-	
-	local wep = attacker:GetActiveWeapon()
-	if not IsValid(wep) then return end
-	
-    -- remove all hitgroup scaling for my guns
-	if wep.Base == "milkwaters_3p_base" then
-		return false
-	end
-end)
-
--- damage numbers hook
-hook.Add("EntityTakeDamage", "mw_damage_numbers", function(ent, dmginfo)
-    local tag = ent._MW_LastHit
-    if not tag then return end
-    if tag.timeHit < CurTime() - 0.1 then return end
-
-    local att = tag.attacker
-    if not (IsValid(att) and att:IsPlayer()) then return end
-	
-	if not ent:Alive() then return end
-
-    net.Start("mw_damage_number")
-    net.WriteFloat(dmginfo:GetDamage())
-    net.WriteVector(ent:WorldSpaceCenter())
-    net.WriteUInt(ent:EntIndex(), 16)
-    net.WriteUInt(tag.crit, 2)
-    net.Send(att)
-
-    ent._MW_LastHit = nil
-end)
 
 local function ResolveMuzzleCollision(owner, muzzlePos)
     local eye = owner:EyePos()
@@ -640,6 +580,22 @@ function SWEP:Think()
 		self:SetZoomChargeProgress(math.Approach(cur, target, speed))
 	end
 	
+	if self.ZoomCharge and self:GetZoomed() then
+		-- trace where the player is aiming
+		local camPos = owner.MW_CamPos or owner:EyePos()
+		local camAng = owner.MW_CamAng or owner:EyeAngles()
+		
+		local startPos = camPos
+		local endPos = camPos + camAng:Forward() * 90000
+		
+		local tr = util.TraceLine({ start = startPos, endpos = endPos, filter = owner, mask = MASK_SHOT })
+		
+		self:SetZoomDotPos(tr.HitPos)
+	else
+		-- hide dot
+		self:SetZoomDotPos(vector_origin)
+	end
+	
 	if self.LoopShootingSound then
 		if owner:KeyPressed(IN_ATTACK) and self:CanPrimaryAttack() then
 			self:PlayShootSound()
@@ -663,41 +619,13 @@ function SWEP:DrawHUDBackground()
     end
 
     if self.CanZoom and self:GetZoomed() then
-        DrawMaterialOverlay( "hud/scope_sniper_ul", -0.1 )
+        self:DrawSniperScope()
     end
 	
-	if self:GetZoomed() and self:Clip1() > 0 then
-		local frac = self:GetZoomChargeProgress()
-		local w, h = ScrW(), ScrH()
-		local barW = w * 0.3
-		local barH = 12
-		local x = (w - barW) * 0.5
-		local y = h * 0.8
-		local zoomColor = Color(234, 192, 124, 255)
-		
-		-- background
-		surface.SetDrawColor(0, 0, 0, 180)
-		surface.DrawRect(x, y, barW, barH)
-		
-		-- fill
-		surface.SetDrawColor(zoomColor)
-		surface.DrawRect(x, y, barW * frac, barH)
-		
-		-- text
-		draw.SimpleTextOutlined(
-			"Charge Progress",
-			"MW_TF2Damage",
-			w / 2,
-			y - 20,
-			zoomColor,
-			TEXT_ALIGN_CENTER,
-			TEXT_ALIGN_CENTER,
-			2,
-			Color(55, 51, 49, alpha)
-		)
+	if self:GetZoomed() and self:Clip1() > 0 and self.ZoomCharge then
+		self:DrawSniperCharge()
 	end
 end
-
 
 function SWEP:SecondaryAttack()
     if ShouldBlockPrediction() then return end
