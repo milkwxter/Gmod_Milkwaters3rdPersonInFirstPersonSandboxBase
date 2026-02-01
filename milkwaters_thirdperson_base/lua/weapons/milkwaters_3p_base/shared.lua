@@ -652,40 +652,7 @@ function SWEP:DrawHUDBackground()
     end
 
     if self.CanZoom and self:GetZoomed() then
-        local scopeLL = Material("hud/scope_sniper_ll")
-		local scopeUL = Material("hud/scope_sniper_ul")
-		local scopeLR = Material("hud/scope_sniper_lr")
-		local scopeUR = Material("hud/scope_sniper_ur")
-
-		local w, h = ScrW(), ScrH()
-
-		-- black background
-		surface.SetDrawColor(0, 0, 0, 255)
-		surface.DrawRect(0, 0, w, h)
-
-		-- make the scope a perfect circle
-		local scopeSize = math.min(w, h)
-		local half = scopeSize * 0.5
-
-		-- center of screen
-		local cx, cy = w * 0.5, h * 0.5
-
-		-- top-left quadrant
-		surface.SetMaterial(scopeUL)
-		surface.SetDrawColor(255, 255, 255, 255)
-		surface.DrawTexturedRect(cx - half, cy - half, half, half)
-
-		-- top-right
-		surface.SetMaterial(scopeUR)
-		surface.DrawTexturedRect(cx, cy - half, half, half)
-
-		-- bottom-left
-		surface.SetMaterial(scopeLL)
-		surface.DrawTexturedRect(cx - half, cy, half, half)
-
-		-- bottom-right
-		surface.SetMaterial(scopeLR)
-		surface.DrawTexturedRect(cx, cy, half, half)
+        DrawMaterialOverlay( "hud/scope_sniper_ul", -0.1 )
     end
 end
 
