@@ -65,6 +65,7 @@ SWEP.SoundShootEnd = ""
 SWEP.Casing = "ShellEject"
 SWEP.Caseless = false
 SWEP.PlayAttackAnim = true
+SWEP.TracerName = "milkwater_tracer"
 
 SWEP.Primary.ClipSize = 12
 SWEP.Primary.DefaultClip = 12
@@ -326,7 +327,7 @@ function SWEP:ShootBullet(dmg, num, cone)
 		effect:SetStart(startPos)
 		effect:SetOrigin(tr.HitPos)
 		effect:SetNormal(tr.HitNormal)
-		util.Effect("milkwater_tracer", effect)
+		util.Effect(self.TracerName, effect)
 
 		-- apply damage modifiers
 		local newDamage
