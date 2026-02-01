@@ -77,13 +77,18 @@ function SWEP:DrawHUD()
 		local clip = self:Clip1()
 		local reserve = owner:GetAmmoCount(self.Primary.Ammo)
 		local text = clip .. " / " .. reserve
+		
+		local ammoColor = Color(247, 229, 198, 255)
+		if clip <= 0 then
+			ammoColor = Color(255, 0, 0, 255)
+		end
 
 		draw.SimpleTextOutlined(
 			text,
 			"MW_TF2Damage_Large",
 			ScrW() - 400,
 			ScrH() - 100,
-			Color(247, 229, 198, 255),
+			ammoColor,
 			TEXT_ALIGN_RIGHT,
 			TEXT_ALIGN_BOTTOM,
 			3,

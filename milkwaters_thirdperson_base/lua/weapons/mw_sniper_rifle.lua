@@ -35,7 +35,6 @@ SWEP.Primary.Recoil = 10
 SWEP.CanZoom = true
 SWEP.Zoomed = false
 SWEP.ZoomFOV = 20
-SWEP.UnzoomFOV = 0
 
 -- full crits if you got a head shot while zoomed
 function SWEP:ModifyDamage(att, tr, dmginfo)
@@ -52,6 +51,10 @@ function SWEP:ModifyDamage(att, tr, dmginfo)
 		if tr.HitGroup == HITGROUP_HEAD and (hit:IsNPC() or hit:IsPlayer()) then
 			isFullCrit = true
 		end
+		
+		-- multiply by charge progress times three
+		local frac = self:GetZoomChargeProgress()
+		dmg = dmg * (frac * 3)
 	end
 
     return dmg, isMiniCrit, isFullCrit

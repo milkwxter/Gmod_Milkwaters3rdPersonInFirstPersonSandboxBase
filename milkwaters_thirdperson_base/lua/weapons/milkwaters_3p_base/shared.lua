@@ -94,10 +94,11 @@ SWEP.EnablePyroland = false
 SWEP.CanZoom = false
 SWEP.Zoomed = false
 SWEP.ZoomFOV = 20
-SWEP.UnzoomFOV = 0
+SWEP.ZoomCharge = true
 
 function SWEP:SetupDataTables()
     self:NetworkVar("Bool", 0, "Zoomed")
+	self:NetworkVar("Float", 0, "ZoomChargeProgress")
 end
 
 local function MW_Using3PBase(ply)
@@ -202,12 +203,14 @@ function SWEP:PrimaryAttack()
 	if not self.LoopShootingSound then
 		self:EmitSound(self.SoundShootPrimary)
 	end
-    
     self:SetNextPrimaryFire(CurTime() + (self.Primary.FireDelay or 0.1))
     local owner = self:GetOwner()
     if IsValid(owner) and self.PlayAttackAnim == true then
         owner:SetAnimation(PLAYER_ATTACK1)
     end
+	
+	-- reset zoom charge
+	self:SetZoomChargeProgress(0)
 
     -- recoil
     if SERVER then
@@ -629,6 +632,14 @@ function SWEP:Think()
         self:FinishReload()
     end
 	
+	-- increment zoom charge
+	if self.ZoomCharge and self:GetZoomed() then
+		local target = self:GetZoomed() and 1 or 0
+		local cur = self:GetZoomChargeProgress()
+		local speed = FrameTime() * (1 / 3)
+		self:SetZoomChargeProgress(math.Approach(cur, target, speed))
+	end
+	
 	if self.LoopShootingSound then
 		if owner:KeyPressed(IN_ATTACK) and self:CanPrimaryAttack() then
 			self:PlayShootSound()
@@ -654,6 +665,37 @@ function SWEP:DrawHUDBackground()
     if self.CanZoom and self:GetZoomed() then
         DrawMaterialOverlay( "hud/scope_sniper_ul", -0.1 )
     end
+	
+	if self:GetZoomed() and self:Clip1() > 0 then
+		local frac = self:GetZoomChargeProgress()
+		local w, h = ScrW(), ScrH()
+		local barW = w * 0.3
+		local barH = 12
+		local x = (w - barW) * 0.5
+		local y = h * 0.8
+		local zoomColor = Color(234, 192, 124, 255)
+		
+		-- background
+		surface.SetDrawColor(0, 0, 0, 180)
+		surface.DrawRect(x, y, barW, barH)
+		
+		-- fill
+		surface.SetDrawColor(zoomColor)
+		surface.DrawRect(x, y, barW * frac, barH)
+		
+		-- text
+		draw.SimpleTextOutlined(
+			"Charge Progress",
+			"MW_TF2Damage",
+			w / 2,
+			y - 20,
+			zoomColor,
+			TEXT_ALIGN_CENTER,
+			TEXT_ALIGN_CENTER,
+			2,
+			Color(55, 51, 49, alpha)
+		)
+	end
 end
 
 
@@ -664,6 +706,9 @@ function SWEP:SecondaryAttack()
 		local newZoom = not self:GetZoomed()
 
 		self:SetZoomed(newZoom)
+	
+		-- reset zoom charge
+		self:SetZoomChargeProgress(0)
 	end
 	
     self:SetNextSecondaryFire(CurTime() + 0.2)
