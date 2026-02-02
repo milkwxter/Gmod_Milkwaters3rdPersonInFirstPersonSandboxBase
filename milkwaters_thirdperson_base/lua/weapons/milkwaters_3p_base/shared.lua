@@ -265,8 +265,6 @@ function SWEP:DoMuzzleEffect()
 	local startPos, ang = self:GetMuzzlePos()
 	if not startPos or not ang then return end
 
-	local att = self:LookupAttachment("muzzle") or 1
-
 	-- one-shot
 	if not self.MuzzleEffectStaysWhileFiring then
 		ParticleEffect(self.MuzzleEffect, startPos, ang, self)
@@ -322,18 +320,17 @@ function SWEP:ShootBullet(dmg, num, cone)
     local bullet = {}
 	
 	-- crit state
-	local isMiniCrit = false
-	local isFullCrit = false
+	local isMiniCrit, isFullCrit = false, false
 	
     bullet.Num = num or 1
     bullet.Src = src
     bullet.Dir = dir
     bullet.Spread = Vector(cone, cone, 0)
     bullet.Tracer = 0
-    bullet.Force = force or dmg
+    bullet.Force = dmg
     bullet.Damage = dmg
 	bullet.HullSize = 0.1
-    bullet.AmmoType = ammo or self.Primary.Ammo
+    bullet.AmmoType = self.Primary.Ammo
 	
     bullet.Callback = function(att, tr, dmginfo)
 		if CLIENT and not IsFirstTimePredicted() then return end
@@ -602,9 +599,7 @@ function SWEP:Think()
 		local cur = self:GetZoomChargeProgress()
 		local speed = FrameTime() * (1 / 3)
 		self:SetZoomChargeProgress(math.Approach(cur, target, speed))
-	end
-	
-	if self.ZoomCharge and self:GetZoomed() then
+		
 		-- trace where the player is aiming
 		local camPos = owner.MW_CamPos or owner:EyePos()
 		local camAng = owner.MW_CamAng or owner:EyeAngles()
