@@ -5,6 +5,7 @@ SWEP.Base = "milkwaters_3p_base"
 SWEP.PrintName = "Reserve Shooter"
 SWEP.Purpose = "Shoot airborne targets to mini-crit them."
 SWEP.Category = "Milkwater"
+SWEP.SubCatType = { "Soldier", "Pyro" }
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_reserve_shooter.png"
 

@@ -5,6 +5,7 @@ SWEP.Base = "milkwaters_3p_base"
 SWEP.PrintName = "Force-a-Nature"
 SWEP.Purpose = "Knockback scattergun!"
 SWEP.Category = "Milkwater"
+SWEP.SubCatType = { "Scout" }
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_force_a_nature.png"
 

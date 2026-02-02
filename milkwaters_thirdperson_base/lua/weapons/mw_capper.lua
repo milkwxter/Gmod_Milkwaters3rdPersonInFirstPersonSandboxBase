@@ -9,6 +9,7 @@ SWEP.Base = "milkwaters_3p_base"
 SWEP.PrintName = "C.A.P.P.E.R"
 SWEP.Purpose = "A standard pistol."
 SWEP.Category = "Milkwater"
+SWEP.SubCatType = { "Scout" }
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_capper.png"
 

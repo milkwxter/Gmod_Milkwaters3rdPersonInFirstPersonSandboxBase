@@ -5,6 +5,7 @@ SWEP.Base = "milkwaters_3p_base"
 SWEP.PrintName = "Spitfire"
 SWEP.Purpose = "Shoot flaming targets to mini-crit them."
 SWEP.Category = "Milkwater"
+SWEP.SubCatType = { "Pyro" }
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_spitfire.png"
 

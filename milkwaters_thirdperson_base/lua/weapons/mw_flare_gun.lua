@@ -5,6 +5,7 @@ SWEP.Base = "milkwaters_3p_base"
 SWEP.PrintName = "Flare Gun"
 SWEP.Purpose = "A standard flare gun."
 SWEP.Category = "Milkwater"
+SWEP.SubCatType = { "Pyro" }
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_flare_gun.png"
 

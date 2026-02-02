@@ -5,6 +5,7 @@ SWEP.Base = "milkwaters_3p_base"
 SWEP.PrintName = "Family Business"
 SWEP.Purpose = "Larger magazine."
 SWEP.Category = "Milkwater"
+SWEP.SubCatType = { "Heavy" }
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_family_business.png"
 

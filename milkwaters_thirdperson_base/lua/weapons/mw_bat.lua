@@ -5,6 +5,7 @@ SWEP.Base = "milkwaters_3p_base"
 SWEP.PrintName = "Bat"
 SWEP.Purpose = "A standard bat."
 SWEP.Category = "Milkwater"
+SWEP.SubCatType = { "Scout" }
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_bat.png"
 

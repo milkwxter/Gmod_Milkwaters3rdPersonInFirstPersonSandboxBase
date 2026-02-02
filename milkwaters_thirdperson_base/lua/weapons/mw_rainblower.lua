@@ -9,6 +9,7 @@ SWEP.Base = "milkwaters_3p_base"
 SWEP.PrintName = "Rainblower"
 SWEP.Purpose = "A standard rainblower. Wait what?"
 SWEP.Category = "Milkwater"
+SWEP.SubCatType = { "Pyro" }
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_rainblower.png"
 

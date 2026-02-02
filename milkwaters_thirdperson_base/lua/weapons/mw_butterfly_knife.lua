@@ -5,6 +5,7 @@ SWEP.Base = "milkwaters_3p_base"
 SWEP.PrintName = "Butterfly Knife"
 SWEP.Purpose = "Backstab for crits!"
 SWEP.Category = "Milkwater"
+SWEP.SubCatType = { "Spy" }
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_butterfly_knife.png"
 

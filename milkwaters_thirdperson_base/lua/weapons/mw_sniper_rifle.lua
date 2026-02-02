@@ -5,6 +5,7 @@ SWEP.Base = "milkwaters_3p_base"
 SWEP.PrintName = "Sniper Rifle"
 SWEP.Purpose = "A standard sniper rifle."
 SWEP.Category = "Milkwater"
+SWEP.SubCatType = { "Sniper" }
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_sniper_rifle.png"
 

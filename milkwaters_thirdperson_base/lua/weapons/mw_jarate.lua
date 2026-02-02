@@ -5,6 +5,7 @@ SWEP.Base = "milkwaters_3p_base"
 SWEP.PrintName = "Jarate"
 SWEP.Purpose = "Coat targets in piss for minicrits!"
 SWEP.Category = "Milkwater"
+SWEP.SubCatType = { "Sniper" }
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_jarate.png"
 

@@ -5,6 +5,7 @@ SWEP.Base = "milkwaters_3p_base"
 SWEP.PrintName = "Fire Axe"
 SWEP.Purpose = "A standard axe."
 SWEP.Category = "Milkwater"
+SWEP.SubCatType = { "Pyro" }
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_fire_axe.png"
 

@@ -5,6 +5,7 @@ SWEP.Base = "milkwaters_3p_base"
 SWEP.PrintName = "Ambassador"
 SWEP.Purpose = "Headshot for critical damage."
 SWEP.Category = "Milkwater"
+SWEP.SubCatType = { "Spy" }
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_ambassador.png"
 

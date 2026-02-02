@@ -5,6 +5,7 @@ SWEP.Base = "milkwaters_3p_base"
 SWEP.PrintName = "Rocket Jumper"
 SWEP.Purpose = "A rocket launcher that deals no damage."
 SWEP.Category = "Milkwater"
+SWEP.SubCatType = { "Soldier" }
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_rocket_jumper.png"
 

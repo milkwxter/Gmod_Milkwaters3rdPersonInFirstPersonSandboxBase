@@ -5,6 +5,7 @@ SWEP.Base = "milkwaters_3p_base"
 SWEP.PrintName = "Syringe Gun"
 SWEP.Purpose = "A standard syringe gun."
 SWEP.Category = "Milkwater"
+SWEP.SubCatType = { "Medic" }
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_syringe_gun.png"
 

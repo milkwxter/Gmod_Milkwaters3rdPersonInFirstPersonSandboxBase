@@ -5,6 +5,7 @@ SWEP.Base = "milkwaters_3p_base"
 SWEP.PrintName = "Winger"
 SWEP.Purpose = "Jump higher."
 SWEP.Category = "Milkwater"
+SWEP.SubCatType = { "Scout" }
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_winger.png"
 

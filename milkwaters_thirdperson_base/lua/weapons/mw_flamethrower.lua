@@ -9,6 +9,7 @@ SWEP.Base = "milkwaters_3p_base"
 SWEP.PrintName = "Flamethrower"
 SWEP.Purpose = "A standard flamethrower."
 SWEP.Category = "Milkwater"
+SWEP.SubCatType = { "Pyro" }
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_flamethrower.png"
 

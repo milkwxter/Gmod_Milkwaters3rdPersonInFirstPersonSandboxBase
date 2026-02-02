@@ -5,6 +5,7 @@ SWEP.Base = "milkwaters_3p_base"
 SWEP.PrintName = "Scattergun"
 SWEP.Purpose = "A standard shotgun."
 SWEP.Category = "Milkwater"
+SWEP.SubCatType = { "Scout" }
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_scattergun.png"
 

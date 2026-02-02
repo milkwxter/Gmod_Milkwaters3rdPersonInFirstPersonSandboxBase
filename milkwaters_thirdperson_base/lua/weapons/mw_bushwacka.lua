@@ -5,6 +5,7 @@ SWEP.Base = "milkwaters_3p_base"
 SWEP.PrintName = "Bushwacka"
 SWEP.Purpose = "Minicrits turn into full crits!"
 SWEP.Category = "Milkwater"
+SWEP.SubCatType = { "Sniper" }
 SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mw_bushwacka.png"
 
