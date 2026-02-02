@@ -18,6 +18,10 @@ function SWEP:ExtraEffectOnHit(att, tr)
 	-- call me in the child weapon
 end
 
+function SWEP:ExtraEffectOnShoot()
+	-- add logic here in child weapons
+end
+
 -- stop hitgroups for players
 hook.Add("ScalePlayerDamage", "mw_disable_hitgroups_player", function(ply, hitgroup, dmginfo)
 	local attacker = dmginfo:GetAttacker()

@@ -20,6 +20,9 @@ AddCSLuaFile("cl_sniper_dot.lua")
 AddCSLuaFile("sh_render.lua")
 AddCSLuaFile("sh_sound.lua")
 AddCSLuaFile("sh_damage.lua")
+AddCSLuaFile("sh_reload.lua")
+AddCSLuaFile("sh_melee.lua")
+
 
 -- give clients certain files
 if CLIENT then
@@ -35,6 +38,8 @@ end
 include("sh_render.lua")
 include("sh_sound.lua")
 include("sh_damage.lua")
+include("sh_reload.lua")
+include("sh_melee.lua")
 
 -- cache common particles
 if SERVER then
@@ -109,35 +114,12 @@ SWEP.MeleeDelay = 0.2
 SWEP.MeleeHitSound = "weapons/cbar_hitbod1.wav"
 SWEP.MeleeSwingSound = "weapons/cbar_miss1.wav"
 
+--================ SETUP / INITIALIZATION ================--
+
 function SWEP:SetupDataTables()
     self:NetworkVar("Bool", 0, "Zoomed")
 	self:NetworkVar("Float", 0, "ZoomChargeProgress")
 	self:NetworkVar("Vector", 0, "ZoomDotPos")
-end
-
-local function MW_Using3PBase(ply)
-    local wep = ply:GetActiveWeapon()
-    return IsValid(wep) and wep.Base == "milkwaters_3p_base"
-end
-
--- get exact camera position
-function MW_GetFPCamera(ply)
-	if not IsValid(ply) then return ply:EyePos() end
-	
-	local head = ply:LookupBone("ValveBiped.Bip01_Head1")
-	
-	if head then
-		local matrix = ply:GetBoneMatrix(head)
-		if not matrix then return ply:EyePos(), ply:EyeAngles() end
-		local pos = matrix:GetTranslation()
-		local ang = matrix:GetAngles()
-		
-		if pos and ang then
-			return pos, ang
-		end
-	end
-
-	return ply:EyePos(), ply:EyeAngles()
 end
 
 function SWEP:Initialize()
@@ -168,6 +150,22 @@ function SWEP:OnRemove()
 	self:SetZoomed(false)
 end
 
+local function MW_Using3PBase(ply)
+    local wep = ply:GetActiveWeapon()
+    return IsValid(wep) and wep.Base == "milkwaters_3p_base"
+end
+
+if CLIENT then
+	function SWEP:CreateWorldModel()
+		if IsValid(self.WModel) then return end
+
+		self.WModel = ClientsideModel(self.WorldModel, RENDERGROUP_OPAQUE)
+		self.WModel:SetNoDraw(true)
+	end
+end
+
+--================ PREDICTION HELPERS ================--
+
 local function ShouldBlockPrediction()
     -- singleplayer: never block
     if game.SinglePlayer() then return false end
@@ -175,6 +173,28 @@ local function ShouldBlockPrediction()
     -- multiplayer: block mispredicted frames
     return CLIENT and not IsFirstTimePredicted()
 end
+
+-- get exact camera position
+function MW_GetFPCamera(ply)
+	if not IsValid(ply) then return ply:EyePos() end
+	
+	local head = ply:LookupBone("ValveBiped.Bip01_Head1")
+	
+	if head then
+		local matrix = ply:GetBoneMatrix(head)
+		if not matrix then return ply:EyePos(), ply:EyeAngles() end
+		local pos = matrix:GetTranslation()
+		local ang = matrix:GetAngles()
+		
+		if pos and ang then
+			return pos, ang
+		end
+	end
+
+	return ply:EyePos(), ply:EyeAngles()
+end
+
+--================ PRIMARY ATTACK PIPELINE ================--
 
 -- are we allowed to attack
 function SWEP:CanPrimaryAttack()
@@ -255,59 +275,6 @@ function SWEP:PrimaryAttack()
 	self:ExtraEffectOnShoot()
 end
 
-function SWEP:ExtraEffectOnShoot()
-	-- add logic here in child weapons
-end
-
-function SWEP:DoMuzzleEffect()
-	if self.MuzzleEffect == "" then return end
-
-	local startPos, ang = self:GetMuzzlePos()
-	if not startPos or not ang then return end
-
-	-- one-shot
-	if not self.MuzzleEffectStaysWhileFiring then
-		ParticleEffect(self.MuzzleEffect, startPos, ang, self)
-		return
-	end
-
-	-- looping
-	if not IsValid(self.MuzzleLoop) then
-		if CLIENT then
-			self:DoMuzzleEffect_Looping()
-		end
-		if game.SinglePlayer() then
-			self:CallOnClient("DoMuzzleEffect_Looping")
-		end
-	end
-end
-
-if CLIENT then
-	function SWEP:CreateWorldModel()
-		if IsValid(self.WModel) then return end
-
-		self.WModel = ClientsideModel(self.WorldModel, RENDERGROUP_OPAQUE)
-		self.WModel:SetNoDraw(true)
-	end
-	
-    function SWEP:DoMuzzleEffect_Looping()
-		if IsValid(self.MuzzleLoop) then return end
-		
-		local att = self:LookupAttachment("muzzle")
-		if not att or att <= 0 then att = 1 end
-
-		-- attach to the model
-		self.MuzzleLoop = CreateParticleSystem( self.WModel, self.MuzzleEffect, PATTACH_POINT_FOLLOW, att )
-	end
-
-    function SWEP:StopMuzzleEffect()
-        if IsValid(self.MuzzleLoop) then
-            self.MuzzleLoop:StopEmission(false, true)
-            self.MuzzleLoop = nil
-        end
-    end
-end
-
 function SWEP:ShootBullet(dmg, num, cone)
     local owner = self:GetOwner()
     if not IsValid(owner) then return end
@@ -384,82 +351,6 @@ function SWEP:ShootBullet(dmg, num, cone)
 	end
 end
 
-function SWEP:CanReload()
-    if self.Reloading then return false end
-
-    -- clip already full
-    if self:Clip1() >= self.Primary.ClipSize then return false end
-
-    local owner = self:GetOwner()
-    if not IsValid(owner) then return false end
-
-    -- no reserve ammo
-    if owner:GetAmmoCount(self.Primary.Ammo) <= 0 then return false end
-
-    return true
-end
-
-function SWEP:Reload()
-    if not self:CanReload() then return end
-	
-	self:SetZoomed(false)
-	
-    self:StartReload()
-end
-
-function SWEP:StartReload()
-    local owner = self:GetOwner()
-    if not IsValid(owner) then return end
-
-    self.Reloading = true
-    self.ReloadEnd = CurTime() + self.ReloadTime
-
-    -- play 3p animation
-    owner:DoAnimationEvent(self.ReloadGesture)
-	
-	-- stop looping sound
-	self:MW_StopLoopingSound()
-end
-
-function SWEP:FinishReload()
-    self.Reloading = false
-
-    local owner = self:GetOwner()
-    if not IsValid(owner) then return end
-
-    local ammo = owner:GetAmmoCount(self.Primary.Ammo)
-    local needed = self.Primary.ClipSize - self:Clip1()
-
-    local toLoad = math.min(needed, ammo)
-
-    self:SetClip1(self:Clip1() + toLoad)
-    owner:SetAmmo(ammo - toLoad, self.Primary.Ammo)
-end
-
-local function ResolveMuzzleCollision(owner, muzzlePos)
-    local eye = owner:EyePos()
-	
-    local tr1 = util.TraceLine({
-        start  = eye,
-        endpos = muzzlePos,
-        filter = owner,
-        mask   = MASK_SOLID_BRUSHONLY
-    })
-	
-    local tr2 = util.TraceLine({
-        start  = muzzlePos,
-        endpos = eye,
-        filter = owner,
-        mask   = MASK_SOLID_BRUSHONLY
-    })
-	
-    if tr1.Hit or tr2.Hit then
-        return eye, true
-    end
-
-    return muzzlePos, false
-end
-
 function SWEP:ShootProjectile()
     if not SERVER then return end
 
@@ -515,6 +406,50 @@ function SWEP:DoRecoil()
     end
 end
 
+--================ MUZZLE / CASING EFFECTS ================--
+
+function SWEP:DoMuzzleEffect()
+	if self.MuzzleEffect == "" then return end
+
+	local startPos, ang = self:GetMuzzlePos()
+	if not startPos or not ang then return end
+
+	-- one-shot
+	if not self.MuzzleEffectStaysWhileFiring then
+		ParticleEffect(self.MuzzleEffect, startPos, ang, self)
+		return
+	end
+
+	-- looping
+	if not IsValid(self.MuzzleLoop) then
+		if CLIENT then
+			self:DoMuzzleEffect_Looping()
+		end
+		if game.SinglePlayer() then
+			self:CallOnClient("DoMuzzleEffect_Looping")
+		end
+	end
+end
+
+if CLIENT then
+	function SWEP:DoMuzzleEffect_Looping()
+		if IsValid(self.MuzzleLoop) then return end
+		
+		local att = self:LookupAttachment("muzzle")
+		if not att or att <= 0 then att = 1 end
+
+		-- attach to the model
+		self.MuzzleLoop = CreateParticleSystem( self.WModel, self.MuzzleEffect, PATTACH_POINT_FOLLOW, att )
+	end
+
+    function SWEP:StopMuzzleEffect()
+        if IsValid(self.MuzzleLoop) then
+            self.MuzzleLoop:StopEmission(false, true)
+            self.MuzzleLoop = nil
+        end
+    end
+end
+
 function SWEP:EjectCasing()
 	-- caseless guns exist
 	if self.Caseless then return end
@@ -538,6 +473,8 @@ function SWEP:EjectCasing()
     ed:SetEntity(self)
     util.Effect(self.Casing, ed, true, true)
 end
+
+--================ CAMERA / TRANSFORM UTILITIES ================--
 
 function SWEP:GetHandPos()
     local owner = self:GetOwner()
@@ -584,6 +521,32 @@ function SWEP:GetMuzzlePos()
 
     return pos, ang
 end
+
+local function ResolveMuzzleCollision(owner, muzzlePos)
+    local eye = owner:EyePos()
+	
+    local tr1 = util.TraceLine({
+        start  = eye,
+        endpos = muzzlePos,
+        filter = owner,
+        mask   = MASK_SOLID_BRUSHONLY
+    })
+	
+    local tr2 = util.TraceLine({
+        start  = muzzlePos,
+        endpos = eye,
+        filter = owner,
+        mask   = MASK_SOLID_BRUSHONLY
+    })
+	
+    if tr1.Hit or tr2.Hit then
+        return eye, true
+    end
+
+    return muzzlePos, false
+end
+
+--================ GOATED THINK ================--
 
 function SWEP:Think()
 	local owner = self:GetOwner()
@@ -632,19 +595,7 @@ function SWEP:Think()
 	end
 end
 
-function SWEP:DrawHUDBackground()
-    if self.EnablePyroland then
-        self:DrawHUDPyrovision()
-    end
-
-    if self.CanZoom and self:GetZoomed() then
-        self:DrawSniperScope()
-    end
-	
-	if self:GetZoomed() and self:Clip1() > 0 and self.ZoomCharge then
-		self:DrawSniperCharge()
-	end
-end
+--================ SECONDARY ATTACK PIPELINE ================--
 
 function SWEP:SecondaryAttack()
     if ShouldBlockPrediction() then return end
@@ -661,104 +612,18 @@ function SWEP:SecondaryAttack()
     self:SetNextSecondaryFire(CurTime() + 0.2)
 end
 
-function SWEP:DoMeleeAttack()
-    local owner = self:GetOwner()
-    if not IsValid(owner) then return end
+--================ HUD DRAWING ================--
 
-    -- play swing effects
-    owner:EmitSound(self.MeleeSwingSound)
-	owner:SetAnimation(PLAYER_ATTACK1)
+function SWEP:DrawHUDBackground()
+    if self.EnablePyroland then
+        self:DrawHUDPyrovision()
+    end
 
-    timer.Simple(self.MeleeDelay, function()
-        if not IsValid(self) or not IsValid(owner) then return end
-        self:DoMeleeTrace()
-    end)
-end
-
-function SWEP:DoMeleeTrace()
-    local owner = self:GetOwner()
-    if not IsValid(owner) then return end
-
-    local startPos = MW_GetFPCamera(owner)
-    local endPos = startPos + owner:GetAimVector() * self.MeleeRange
-
-    local tr = util.TraceHull({
-        start = startPos,
-        endpos = endPos,
-        filter = owner,
-        mins = Vector(-1, -1, -1),
-        maxs = Vector(1, 1, 1),
-        mask = MASK_SHOT
-    })
-
-    if not tr.Hit then return end
-
-	local hit = tr.Entity
-
-    local damage = self.MeleeDamage
-    local isMiniCrit, isFullCrit = false, false
+    if self.CanZoom and self:GetZoomed() then
+        self:DrawSniperScope()
+    end
 	
-	-- bullet for effects and damage
-	if SERVER then
-		local dir = (tr.HitPos - owner:GetShootPos()):GetNormalized()
-
-		local bullet = {}
-		bullet.Num      = 1
-		bullet.Src      = owner:GetShootPos()
-		bullet.Dir      = dir
-		bullet.Spread   = Vector(0, 0, 0)
-		bullet.Tracer   = 0
-		bullet.HullSize = 2
-		bullet.Force    = damage * 0.5
-		bullet.Damage   = damage
-		bullet.Distance = self.MeleeRange + 32
-		
-		bullet.Callback = function(att, tr, dmginfo)
-			if CLIENT and not IsFirstTimePredicted() then return end
-
-			local hit = tr.Entity
-
-			-- apply damage modifiers
-			local newDamage
-			if SERVER and IsValid(att) and att:IsPlayer() then
-				if IsValid(hit) then
-					newDamage, isMiniCrit, isFullCrit = self:ModifyDamage(att, tr, dmginfo)
-					
-					-- increase damage based on crits
-					if isFullCrit then
-						newDamage = newDamage * 3
-					elseif isMiniCrit then
-						newDamage = newDamage * 1.35
-					end
-					
-					-- finish the calcs
-					dmginfo:SetDamage(newDamage)
-					
-					-- add time of hit for the damage numbers hook (trust me)
-					hit._MW_LastHit = {attacker = att, crit = isFullCrit and 2 or (isMiniCrit and 1 or 0), timeHit = CurTime()}
-					
-					-- perform a magic extra effect
-					self:ExtraEffectOnHit(att, tr)
-				end
-			end
-		end
-
-		owner:FireBullets(bullet)
+	if self:GetZoomed() and self:Clip1() > 0 and self.ZoomCharge then
+		self:DrawSniperCharge()
 	end
-
-    -- hit sound
-    owner:EmitSound(self.MeleeHitSound)
-	
-	-- add time of hit for the damage numbers hook (trust me)
-	hit._MW_LastHit = {attacker = owner, crit = isFullCrit and 2 or (isMiniCrit and 1 or 0), timeHit = CurTime()}
-	
-	-- send damage sound
-	if SERVER and IsValid(owner) and owner:IsPlayer() then
-		net.Start("mw_damage_sound")
-		net.WriteUInt(isFullCrit and 2 or (isMiniCrit and 1 or 0), 2)
-		net.Send(owner)
-	end
-
-    -- custom effect hook
-    self:ExtraEffectOnHit(owner, tr)
 end
