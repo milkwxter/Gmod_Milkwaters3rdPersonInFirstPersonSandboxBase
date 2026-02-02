@@ -29,7 +29,7 @@ SWEP.Primary.Automatic = true
 SWEP.Primary.FireDelay = 0.15
 SWEP.Primary.Damage = 50
 SWEP.Primary.NumShots = 1
-SWEP.Cone = 0.0001
+SWEP.Cone = 0
 SWEP.Primary.Recoil = 10
 
 SWEP.CanZoom = true

@@ -10,7 +10,7 @@ SWEP.IconOverride = "weapons/mw_fire_axe.png"
 
 SWEP.WorldModel = "models/weapons/c_models/c_fireaxe_pyro/c_fireaxe_pyro.mdl"
 
-SWEP.HandOffset_Pos = Vector(5, -1, 1) -- forward, right, up
+SWEP.HandOffset_Pos = Vector(3, -1, 2) -- forward, right, up
 SWEP.HandOffset_Ang = Angle(0, 0, 180) -- pitch, yaw, roll
 
 SWEP.MuzzleOffset_Pos = Vector(20, -1, 4) -- forward, right, up
