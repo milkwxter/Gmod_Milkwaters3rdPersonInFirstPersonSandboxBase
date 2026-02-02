@@ -377,7 +377,7 @@ function SWEP:ShootProjectile()
 		ang = (ang:Forward() + rand):Angle()
 	end
 	
-	pos, blocked = ResolveMuzzleCollision(owner, pos)
+	pos, blocked = self:ResolveMuzzleCollision(owner, pos)
 
     local ent = ents.Create(self.ProjectileClass)
     if not IsValid(ent) then return end
@@ -529,7 +529,7 @@ function SWEP:GetMuzzlePos()
     return pos, ang
 end
 
-local function ResolveMuzzleCollision(owner, muzzlePos)
+function SWEP:ResolveMuzzleCollision(owner, muzzlePos)
     local eye = owner:EyePos()
 	
     local tr1 = util.TraceLine({
