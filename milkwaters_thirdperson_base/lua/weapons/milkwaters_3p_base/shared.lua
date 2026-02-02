@@ -102,6 +102,13 @@ SWEP.ZoomFOV = 20
 SWEP.ZoomCharge = true
 SWEP.ZoomDot = "effects/sniperdot"
 
+SWEP.Melee = false
+SWEP.MeleeDamage = 25
+SWEP.MeleeRange = 70
+SWEP.MeleeDelay = 0.2
+SWEP.MeleeHitSound = "weapons/cbar_hitbod1.wav"
+SWEP.MeleeSwingSound = "weapons/cbar_miss1.wav"
+
 function SWEP:SetupDataTables()
     self:NetworkVar("Bool", 0, "Zoomed")
 	self:NetworkVar("Float", 0, "ZoomChargeProgress")
@@ -178,6 +185,9 @@ function SWEP:CanPrimaryAttack()
 	-- stop client predicting in multiplayer
 	if ShouldBlockPrediction() then return false end
 	
+	-- melee time
+	if self.Melee then return true end
+	
     -- no ammo
     if self:Clip1() <= 0 then
 		if CLIENT then
@@ -197,22 +207,27 @@ function SWEP:PrimaryAttack()
     if not self:CanPrimaryAttack() then return end
 	
     local owner = self:GetOwner()
+	
+	-- timing
+    self:SetNextPrimaryFire(CurTime() + (self.Primary.FireDelay or 0.1))
 
     -- fire
 	if self.Projectile then
 		for i = 1, self.Primary.NumShots do
 			self:ShootProjectile()
 		end
+	elseif self.Melee then
+		self:DoMeleeAttack()
+		return
 	else
 		self:ShootBullet(self.Primary.Damage, self.Primary.NumShots, self.Cone)
 	end
 
-    -- ammo, sound, timing, animation
+    -- ammo, sound, animation
     self:TakePrimaryAmmo(1)
 	if not self.LoopShootingSound then
 		self:EmitSound(self.SoundShootPrimary)
 	end
-    self:SetNextPrimaryFire(CurTime() + (self.Primary.FireDelay or 0.1))
     if IsValid(owner) and self.PlayAttackAnim == true then
         owner:SetAnimation(PLAYER_ATTACK1)
     end
@@ -649,4 +664,90 @@ function SWEP:SecondaryAttack()
 	end
 	
     self:SetNextSecondaryFire(CurTime() + 0.2)
+end
+
+function SWEP:DoMeleeAttack()
+    local owner = self:GetOwner()
+    if not IsValid(owner) then return end
+
+    -- play swing effects
+    owner:EmitSound(self.MeleeSwingSound)
+	owner:SetAnimation(PLAYER_ATTACK1)
+
+    timer.Simple(self.MeleeDelay, function()
+        if not IsValid(self) or not IsValid(owner) then return end
+        self:DoMeleeTrace()
+    end)
+end
+
+function SWEP:DoMeleeTrace()
+    local owner = self:GetOwner()
+    if not IsValid(owner) then return end
+
+    local startPos = MW_GetFPCamera(owner)
+    local endPos = startPos + owner:GetAimVector() * self.MeleeRange
+
+    local tr = util.TraceHull({
+        start = startPos,
+        endpos = endPos,
+        filter = owner,
+        mins = Vector(-1, -1, -1),
+        maxs = Vector(1, 1, 1),
+        mask = MASK_SHOT
+    })
+
+    if not tr.Hit then return end
+
+	local hit = tr.Entity
+
+    local damage = self.MeleeDamage
+    local isMiniCrit, isFullCrit = false, false
+
+    -- apply crit modifiers
+    if SERVER and IsValid(hit) and hit:IsPlayer() then
+        local dmginfo = DamageInfo()
+        dmginfo:SetDamage(damage)
+
+        damage, isMiniCrit, isFullCrit = self:ModifyDamage(owner, tr, dmginfo)
+
+        if isFullCrit then
+            damage = damage * 3
+        elseif isMiniCrit then
+            damage = damage * 1.35
+        end
+    end
+
+    -- add time of hit for the damage numbers hook (trust me)
+	hit._MW_LastHit = {attacker = owner, crit = isFullCrit and 2 or (isMiniCrit and 1 or 0), timeHit = CurTime()}
+	
+	-- send damage sound
+	if SERVER and IsValid(owner) and owner:IsPlayer() then
+		net.Start("mw_damage_sound")
+		net.WriteUInt(isFullCrit and 2 or (isMiniCrit and 1 or 0), 2)
+		net.Send(owner)
+	end
+	
+	-- bullet for effects and damage
+	if SERVER then
+		local dir = (tr.HitPos - owner:GetShootPos()):GetNormalized()
+
+		local bullet = {}
+		bullet.Num      = 1
+		bullet.Src      = owner:GetShootPos()
+		bullet.Dir      = dir
+		bullet.Spread   = Vector(0, 0, 0)
+		bullet.Tracer   = 0
+		bullet.HullSize = 2
+		bullet.Force    = damage * 0.5
+		bullet.Damage   = damage
+		bullet.Distance = self.MeleeRange + 32
+
+		owner:FireBullets(bullet)
+	end
+
+    -- hit sound
+    owner:EmitSound(self.MeleeHitSound)
+
+    -- custom effect hook
+    self:ExtraEffectOnHit(owner, tr)
 end
