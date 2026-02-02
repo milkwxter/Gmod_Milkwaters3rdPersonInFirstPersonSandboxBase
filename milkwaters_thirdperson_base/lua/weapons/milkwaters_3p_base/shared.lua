@@ -120,10 +120,16 @@ function SWEP:SetupDataTables()
     self:NetworkVar("Bool", 0, "Zoomed")
 	self:NetworkVar("Float", 0, "ZoomChargeProgress")
 	self:NetworkVar("Vector", 0, "ZoomDotPos")
+	self:NetworkVar("String", 0, "CurrentWorldModel")
 end
 
 function SWEP:Initialize()
     self:SetHoldType(self.HoldType or "pistol")
+	
+	if SERVER then 
+		self:SetCurrentWorldModel(self.WorldModel or "models/props_junk/garbage_milkcarton002a.mdl")
+	end
+	
 	if CLIENT then self:CreateWorldModel() end
 end
 
@@ -159,8 +165,9 @@ if CLIENT then
 	function SWEP:CreateWorldModel()
 		if IsValid(self.WModel) then return end
 
-		self.WModel = ClientsideModel(self.WorldModel, RENDERGROUP_OPAQUE)
-		self.WModel:SetNoDraw(true)
+        local mdl = self.GetCurrentWorldModel and self:GetCurrentWorldModel() or self.WorldModel
+        self.WModel = ClientsideModel(mdl, RENDERGROUP_OPAQUE)
+        self.WModel:SetNoDraw(true)
 	end
 end
 

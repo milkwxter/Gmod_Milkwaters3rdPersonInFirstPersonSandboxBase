@@ -2,6 +2,17 @@
 function SWEP:DrawWorldModel()
 	if CLIENT and self:GetZoomed() then return end
 	
+	local mdl = self.GetCurrentWorldModel and self:GetCurrentWorldModel() or self.WorldModel
+	
+	if mdl and (not IsValid(self.WModel) or self.WModel:GetModel() ~= mdl) then
+		if IsValid(self.WModel) then
+			self.WModel:Remove()
+		end
+		
+		self.WModel = ClientsideModel(mdl)
+		self.WModel:SetNoDraw(true)
+	end
+	
     if not IsValid(self.WModel) then return end
 
     local owner = self:GetOwner()
