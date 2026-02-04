@@ -207,9 +207,6 @@ function SWEP:CanPrimaryAttack()
     local owner = self:GetOwner()
     if not IsValid(owner) then return false end
 	
-	-- stop client predicting in multiplayer
-	if ShouldBlockPrediction() then return false end
-	
 	-- melee time
 	if self.Melee then return true end
 	
@@ -232,6 +229,7 @@ function SWEP:PrimaryAttack()
     if not self:CanPrimaryAttack() then return end
 	
     local owner = self:GetOwner()
+	local isSP = game.SinglePlayer()
 	
 	-- timing
     self:SetNextPrimaryFire(CurTime() + (self.Primary.FireDelay or 0.1))
@@ -250,9 +248,6 @@ function SWEP:PrimaryAttack()
 
     -- ammo, sound, animation
     self:TakePrimaryAmmo(1)
-	if not self.LoopShootingSound then
-		self:EmitSound(self.SoundShootPrimary)
-	end
     if IsValid(owner) and self.PlayAttackAnim == true then
         owner:SetAnimation(PLAYER_ATTACK1)
     end
@@ -261,20 +256,21 @@ function SWEP:PrimaryAttack()
 	self:SetZoomChargeProgress(0)
 
     -- recoil
-    if SERVER then
-        self:CallOnClient("DoRecoil")
-    elseif CLIENT and IsFirstTimePredicted() then
-        self:DoRecoil()
+    if (SERVER and isSP) or (not isSP and CLIENT and IsFirstTimePredicted()) then
+		self:DoRecoil()
+		self:DoMuzzleEffect()
     end
-
+	
+	if CLIENT and IsFirstTimePredicted() then
+		if not self.LoopShootingSound then
+			self:EmitSound(self.SoundShootPrimary)
+		end
+	end
+	
     -- muzzle + casing effects
     if SERVER then
         self:EjectCasing()
     end
-	
-	if CLIENT or game.SinglePlayer() then
-		self:DoMuzzleEffect()
-	end
 	
 	-- extra effect on shoot (not hit)
 	self:ExtraEffectOnShoot()

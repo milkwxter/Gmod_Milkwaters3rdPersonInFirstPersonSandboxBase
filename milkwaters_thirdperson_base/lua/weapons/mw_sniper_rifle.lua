@@ -56,8 +56,8 @@ function SWEP:ModifyDamage(att, tr, dmginfo)
 		end
 		
 		-- multiply by charge progress times three
-		local frac = self:GetZoomChargeProgress()
-		dmg = dmg * (frac * 3)
+		local frac = math.Clamp(self:GetZoomChargeProgress(), 0, 1)
+		dmg = self.Primary.Damage + frac * (150 - self.Primary.Damage)
 	end
 
     return dmg, isMiniCrit, isFullCrit
