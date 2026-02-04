@@ -1,11 +1,13 @@
 if SERVER then
 	AddCSLuaFile()
-	game.AddParticles( "particles/explosion.pcf" )
-	game.AddParticles( "particles/rockettrail.pcf" )
-	PrecacheParticleSystem("ExplosionCore_MidAir")
-	PrecacheParticleSystem("rockettrail")
 	util.AddNetworkString("mw_rocket_light")
 end
+
+-- cache my particles
+game.AddParticles( "particles/explosion.pcf" )
+game.AddParticles( "particles/rockettrail.pcf" )
+PrecacheParticleSystem("ExplosionCore_MidAir")
+PrecacheParticleSystem("rockettrail")
 
 DEFINE_BASECLASS("base_anim")
 

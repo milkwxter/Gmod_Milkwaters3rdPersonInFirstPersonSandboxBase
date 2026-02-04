@@ -42,7 +42,10 @@ SWEP.MeleeDelay = 0.2
 hook.Add("EntityTakeDamage", "MW_BushwackaDamagePenalty", function(target, dmginfo)
     if not IsValid(target) or not target:IsPlayer() then return end
 
-    if target:GetActiveWeapon():GetClass() == "mw_bushwacka" then
+    local wep = target:GetActiveWeapon()
+    if not IsValid(wep) then return end
+
+    if wep:GetClass() == "mw_bushwacka" then
         dmginfo:ScaleDamage(1.2)
     end
 end)

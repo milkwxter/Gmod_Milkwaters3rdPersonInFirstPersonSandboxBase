@@ -1,8 +1,10 @@
 if SERVER then
 	AddCSLuaFile()
-	game.AddParticles( "particles/rockettrail.pcf" )
-	PrecacheParticleSystem("rockettrail_RocketJumper")
 end
+
+-- cache my particles
+game.AddParticles( "particles/rockettrail.pcf" )
+PrecacheParticleSystem("rockettrail_RocketJumper")
 
 DEFINE_BASECLASS("mw_rocket_proj")
 

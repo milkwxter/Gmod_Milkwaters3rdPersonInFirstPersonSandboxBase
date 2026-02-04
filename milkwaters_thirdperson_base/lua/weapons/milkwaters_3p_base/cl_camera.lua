@@ -66,7 +66,7 @@ if CLIENT then
         if not Using3PBase(ply) then return end
 
         local dt = FrameTime()
-        if dt > 0.05 then dt = 0.05 end
+        if dt > 0.03 then dt = 0.03 end
 
         -- initialize camAng on first frame
         if camAng.p == 0 and camAng.y == 0 and camAng.r == 0 then
@@ -87,6 +87,12 @@ if CLIENT then
         local yawDelta = math.AngleDifference(target.y, camAng.y)
         rollVel = rollVel + yawDelta * 0.02
         roll, rollVel = SpringUpdate(roll, rollVel, rollFreq, dt)
+		
+		-- clamp roll/rollVel for stability on low FPS
+		local maxRoll = 15
+		local maxVel = 120 * dt
+		roll = math.Clamp(roll, -maxRoll, maxRoll)
+		rollVel = math.Clamp(rollVel, -maxVel, maxVel)
 
         -- final camera angle
         local cang = camAng + recoil

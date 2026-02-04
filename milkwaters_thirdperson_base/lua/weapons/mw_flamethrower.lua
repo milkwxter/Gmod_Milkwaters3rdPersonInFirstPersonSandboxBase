@@ -1,8 +1,10 @@
 if SERVER then
 	AddCSLuaFile()
-    game.AddParticles("particles/flamethrower.pcf")
-    PrecacheParticleSystem("_flamethrower_REAL")
 end
+
+-- cache my particles
+game.AddParticles("particles/flamethrower.pcf")
+PrecacheParticleSystem("_flamethrower_REAL")
 
 SWEP.Base = "milkwaters_3p_base"
 

@@ -1,8 +1,10 @@
 if SERVER then
 	AddCSLuaFile()
-    game.AddParticles("particles/invasion_ray_gun_fx.pcf")
-    PrecacheParticleSystem("muzzle_raygun_red")
 end
+
+-- cache my particles
+game.AddParticles("particles/invasion_ray_gun_fx.pcf")
+PrecacheParticleSystem("muzzle_raygun_red")
 
 SWEP.Base = "milkwaters_3p_base"
 

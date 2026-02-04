@@ -1,11 +1,12 @@
 if SERVER then
 	AddCSLuaFile()
-	game.AddParticles( "particles/item_fx.pcf" )
-	PrecacheParticleSystem("peejar_impact")
-    PrecacheParticleSystem("peejar_drips")
 	util.AddNetworkString("mw_stop_jarate_drip")
 end
 
+-- cache my particles
+game.AddParticles( "particles/item_fx.pcf" )
+PrecacheParticleSystem("peejar_impact")
+PrecacheParticleSystem("peejar_drips")
 
 DEFINE_BASECLASS("base_anim")
 

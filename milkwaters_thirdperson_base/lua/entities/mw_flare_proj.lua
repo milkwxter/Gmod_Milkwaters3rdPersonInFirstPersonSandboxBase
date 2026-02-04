@@ -1,8 +1,10 @@
 if SERVER then
 	AddCSLuaFile()
-	game.AddParticles( "particles/rockettrail.pcf" )
-	PrecacheParticleSystem("flaregun_trail_red")
 end
+
+-- cache my particles
+game.AddParticles( "particles/rockettrail.pcf" )
+PrecacheParticleSystem("flaregun_trail_red")
 
 DEFINE_BASECLASS("base_anim")
 
