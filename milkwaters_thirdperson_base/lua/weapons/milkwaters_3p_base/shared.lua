@@ -42,11 +42,9 @@ include("sh_reload.lua")
 include("sh_melee.lua")
 
 -- cache common particles
-if SERVER then
-    game.AddParticles("particles/muzzle_flash.pcf")
-    PrecacheParticleSystem("muzzle_shotgun")
-    PrecacheParticleSystem("muzzle_smg")
-end
+game.AddParticles("particles/muzzle_flash.pcf")
+PrecacheParticleSystem("muzzle_shotgun")
+PrecacheParticleSystem("muzzle_smg")
 
 SWEP.PrintName = "Base Weapon"
 SWEP.Category = "Milkwater"
