@@ -257,15 +257,18 @@ function SWEP:PrimaryAttack()
 
     -- recoil
     if (SERVER and isSP) or (not isSP and CLIENT and IsFirstTimePredicted()) then
-		self:DoRecoil()
+		if game.SinglePlayer() then
+			self:CallOnClient("DoRecoil")
+		else
+			self:DoRecoil()
+		end
 		self:DoMuzzleEffect()
     end
 	
-	if CLIENT and IsFirstTimePredicted() then
-		if not self.LoopShootingSound then
-			self:EmitSound(self.SoundShootPrimary)
-		end
+	if not self.LoopShootingSound then
+		self:EmitSound(self.SoundShootPrimary)
 	end
+	
 	
     -- muzzle + casing effects
     if SERVER then
