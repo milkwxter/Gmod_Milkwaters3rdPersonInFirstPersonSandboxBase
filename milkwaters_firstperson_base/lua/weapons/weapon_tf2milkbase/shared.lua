@@ -51,6 +51,8 @@ SWEP.AdminSpawnable = true
 SWEP.DrawCrosshair = false
 SWEP.DrawAmmo = false
 
+SWEP.CSMuzzleFlashes = true
+
 SWEP.UseHands = true
 SWEP.Base = "weapon_base"
 
@@ -121,12 +123,6 @@ end
 
 function SWEP:Initialize()
     self:SetHoldType(self.HoldType or "pistol")
-	
-	if SERVER then 
-		self:SetCurrentWorldModel(self.WorldModel or "models/props_junk/garbage_milkcarton002a.mdl")
-	end
-	
-	if CLIENT then self:CreateWorldModel() end
 end
 
 function SWEP:Deploy()
@@ -136,7 +132,23 @@ function SWEP:Deploy()
 		net.Send(self:GetOwner())
 	end
 	
-	if CLIENT then self:CreateWorldModel() end
+    local owner = self:GetOwner()
+    local dur = 0
+
+    if IsValid(owner) then
+        local vm = owner:GetViewModel()
+        if IsValid(vm) then
+            local seq = vm:SelectWeightedSequence(ACT_VM_DRAW)
+            if seq and seq >= 0 then
+                vm:SendViewModelMatchingSequence(seq)
+                local rate = vm:GetPlaybackRate()
+                if not rate or rate <= 0 then rate = 1 end
+                dur = vm:SequenceDuration(seq) / rate
+            end
+        end
+    end
+
+    self:SetNextPrimaryFire(CurTime() + dur)
 	
     return true
 end
@@ -150,21 +162,6 @@ end
 function SWEP:OnRemove()
     self:MW_StopLoopingSound()
 	self:SetZoomed(false)
-end
-
-local function MW_Using3PBase(ply)
-    local wep = ply:GetActiveWeapon()
-    return IsValid(wep) and wep.Base == "milkwaters_3p_base"
-end
-
-if CLIENT then
-	function SWEP:CreateWorldModel()
-		if IsValid(self.WModel) then return end
-
-        local mdl = self.GetCurrentWorldModel and self:GetCurrentWorldModel() or self.WorldModel
-        self.WModel = ClientsideModel(mdl, RENDERGROUP_OPAQUE)
-        self.WModel:SetNoDraw(true)
-	end
 end
 
 --================ PREDICTION HELPERS ================--
@@ -242,8 +239,11 @@ function SWEP:PrimaryAttack()
 		else
 			self:DoRecoil()
 		end
-		self:DoMuzzleEffect()
     end
+	
+	if CLIENT or game.SinglePlayer() then
+		self:DoMuzzleEffect()
+	end
 	
 	if not self.LoopShootingSound then
 		self:EmitSound(self.SoundShootPrimary)
@@ -257,7 +257,7 @@ function SWEP:ShootBullet(dmg, num, cone)
     local owner = self:GetOwner()
     if not IsValid(owner) then return end
 	
-	local src = owner:GetShootPos()
+	local src = owner:EyePos()
 	local ang = owner:EyeAngles()
 	local dir = ang:Forward()
 
@@ -275,6 +275,8 @@ function SWEP:ShootBullet(dmg, num, cone)
     bullet.Damage = dmg
 	bullet.HullSize = 0.1
     bullet.AmmoType = self.Primary.Ammo
+    bullet.Tracer = 1
+	bullet.TracerName = "milkwater_tracer"
 	
     bullet.Callback = function(att, tr, dmginfo)
 		if CLIENT and not IsFirstTimePredicted() then return end
@@ -385,8 +387,7 @@ function SWEP:DoMuzzleEffect()
 	
 	local owner = self:GetOwner()
 
-    local pos = owner:GetShootPos()
-	local ang = owner:EyeAngles()
+    local pos, ang = self.MuzzleOffset_Pos, self.MuzzleOffset_Ang
 
 	-- one-shot
 	if not self.MuzzleEffectStaysWhileFiring then
@@ -486,6 +487,8 @@ function SWEP:SecondaryAttack()
 		-- reset zoom charge
 		self:SetZoomChargeProgress(0)
 	end
+	
+	self:DebugPrintViewmodelAttachments()
 	
     self:SetNextSecondaryFire(CurTime() + 0.2)
 end

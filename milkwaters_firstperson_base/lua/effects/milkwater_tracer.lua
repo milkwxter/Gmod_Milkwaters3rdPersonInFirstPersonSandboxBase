@@ -34,7 +34,7 @@ function EFFECT:Init(data)
         end
     end
 
-    self.LifeTime = 0.05
+    self.LifeTime = 0.5
     self.DieTime  = CurTime() + self.LifeTime
 end
 

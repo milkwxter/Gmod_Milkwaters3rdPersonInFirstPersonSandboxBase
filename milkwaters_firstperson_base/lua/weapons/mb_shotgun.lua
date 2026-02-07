@@ -15,7 +15,7 @@ SWEP.WorldModel = "models/weapons/c_models/c_shotgun/c_shotgun.mdl"
 SWEP.HandOffset_Pos = Vector(0, 0, 0) -- forward, right, up
 SWEP.HandOffset_Ang = Angle(0, 0, 180) -- pitch, yaw, roll
 
-SWEP.MuzzleOffset_Pos = Vector(40, 0, 100) -- forward, right, up
+SWEP.MuzzleOffset_Pos = Vector(40, 6, -5) -- forward, right, up
 SWEP.MuzzleOffset_Ang = Angle(0, 0, 0) -- pitch, yaw, roll
 SWEP.MuzzleEffect = "muzzle_shotgun"
 
