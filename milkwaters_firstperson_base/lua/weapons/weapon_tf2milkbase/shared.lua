@@ -275,11 +275,25 @@ function SWEP:ShootBullet(dmg, num, cone)
     bullet.Damage = dmg
 	bullet.HullSize = 0.1
     bullet.AmmoType = self.Primary.Ammo
-    bullet.Tracer = 1
-	bullet.TracerName = "milkwater_tracer"
 	
     bullet.Callback = function(att, tr, dmginfo)
 		if CLIENT and not IsFirstTimePredicted() then return end
+		
+		local owner = self:GetOwner()
+		if not IsValid(owner) then return end
+
+		local vm = owner:GetViewModel()
+		local startPos = owner:GetShootPos()
+		local attID = vm:LookupAttachment("muzzle")
+
+		local effect = EffectData()
+		effect:SetStart(startPos)
+		effect:SetOrigin(tr.HitPos)
+		effect:SetNormal(tr.HitNormal)
+		effect:SetEntity(self)
+		effect:SetAttachment(attID)
+		util.Effect("milkwater_tracer", effect)
+
 
 		local hit = tr.Entity
 		
@@ -384,14 +398,10 @@ end
 
 function SWEP:DoMuzzleEffect()
 	if self.MuzzleEffect == "" then return end
-	
-	local owner = self:GetOwner()
-
-    local pos, ang = self.MuzzleOffset_Pos, self.MuzzleOffset_Ang
 
 	-- one-shot
 	if not self.MuzzleEffectStaysWhileFiring then
-		ParticleEffect(self.MuzzleEffect, pos, ang, self)
+		self:DoMuzzleEffect_OneShot()
 		return
 	end
 
@@ -406,7 +416,30 @@ function SWEP:DoMuzzleEffect()
 	end
 end
 
+function SWEP:DoMuzzleEffect_OneShot()
+	local owner = self:GetOwner()
+	if not IsValid(owner) then return end
+
+	local vm = owner:GetViewModel()
+	if not IsValid(vm) then return end
+
+	local att = vm:LookupAttachment("muzzle")
+	if att <= 0 then return end
+
+	ParticleEffectAttach(
+		self.MuzzleEffect,
+		PATTACH_POINT,
+		vm,
+		att
+	)
+	
+	if SERVER and game.SinglePlayer() then
+		self:CallOnClient("DoMuzzleEffect_OneShot")
+	end
+end
+
 if CLIENT then
+	
 	function SWEP:DoMuzzleEffect_Looping()
 		if IsValid(self.MuzzleLoop) then return end
 		
@@ -487,8 +520,6 @@ function SWEP:SecondaryAttack()
 		-- reset zoom charge
 		self:SetZoomChargeProgress(0)
 	end
-	
-	self:DebugPrintViewmodelAttachments()
 	
     self:SetNextSecondaryFire(CurTime() + 0.2)
 end
