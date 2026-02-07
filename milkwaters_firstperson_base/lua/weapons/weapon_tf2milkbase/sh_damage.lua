@@ -31,7 +31,7 @@ hook.Add("ScalePlayerDamage", "mw_disable_hitgroups_player", function(ply, hitgr
 	if not IsValid(wep) then return end
 	
     -- remove all hitgroup scaling for my guns
-	if wep.Base == "milkwaters_3p_base" then
+	if wep.Base == "weapon_tf2milkbase" then
 		return false
 	end
 end)
@@ -45,7 +45,7 @@ hook.Add("ScaleNPCDamage", "mw_disable_hitgroups_npc", function(ply, hitgroup, d
 	if not IsValid(wep) then return end
 	
     -- remove all hitgroup scaling for my guns
-	if wep.Base == "milkwaters_3p_base" then
+	if wep.Base == "weapon_tf2milkbase" then
 		return false
 	end
 end)

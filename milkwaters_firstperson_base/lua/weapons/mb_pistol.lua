@@ -10,7 +10,7 @@ SWEP.Spawnable = true
 SWEP.IconOverride = "weapons/mb_pistol.png"
 
 SWEP.ViewModel = "models/v_pistol_engineer.mdl"
-SWEP.WorldModel = "models/weapons/c_models/c_shotgun/c_shotgun.mdl"
+SWEP.WorldModel = "models/weapons/c_models/c_pistol/c_pistol.mdl"
 
 SWEP.HandOffset_Pos = Vector(5, -1, 1) -- forward, right, up
 SWEP.HandOffset_Ang = Angle(0, 0, 180) -- pitch, yaw, roll

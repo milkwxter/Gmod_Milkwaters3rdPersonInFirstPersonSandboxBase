@@ -8,7 +8,7 @@ if CLIENT then
 	local function Using3PBase(ply)
 		if not IsValid(ply) then return false end
 		local wep = ply:GetActiveWeapon()
-		return IsValid(wep) and wep.Base == "milkwaters_3p_base"
+		return IsValid(wep) and wep.Base == "weapon_tf2milkbase"
 	end
 
 	hook.Add("HUDShouldDraw", "HideDefaultHealth", function(name)

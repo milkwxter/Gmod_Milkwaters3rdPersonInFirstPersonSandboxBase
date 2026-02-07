@@ -123,6 +123,10 @@ end
 
 function SWEP:Initialize()
     self:SetHoldType(self.HoldType or "pistol")
+	
+	if CLIENT then
+		self:CreateWorldModel()
+	end
 end
 
 function SWEP:Deploy()
@@ -233,13 +237,7 @@ function SWEP:PrimaryAttack()
 	self:SetZoomChargeProgress(0)
 
     -- recoil
-    if (SERVER and isSP) or (not isSP and CLIENT and IsFirstTimePredicted()) then
-		if game.SinglePlayer() then
-			self:CallOnClient("DoRecoil")
-		else
-			self:DoRecoil()
-		end
-    end
+	self:DoRecoil()
 	
 	if CLIENT or game.SinglePlayer() then
 		self:DoMuzzleEffect()
@@ -392,6 +390,10 @@ function SWEP:DoRecoil()
     ang.p = ang.p - pitch * 0.12
     ang.y = ang.y + yaw * 0.12
     owner:SetEyeAngles(ang)
+	
+	if game.SinglePlayer() then
+		self:CallOnClient("DoRecoil")
+	end
 end
 
 --================ MUZZLE / CASING EFFECTS ================--

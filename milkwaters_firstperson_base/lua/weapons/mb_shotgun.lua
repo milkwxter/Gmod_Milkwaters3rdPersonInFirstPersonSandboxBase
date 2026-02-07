@@ -7,7 +7,7 @@ SWEP.Purpose = "A standard shotgun."
 SWEP.Category = "Milkwater"
 SWEP.SubCatType = { "Soldier", "Heavy", "Pyro", "Engineer" }
 SWEP.Spawnable = true
-SWEP.IconOverride = "weapons/mw_shotgun.png"
+SWEP.IconOverride = "weapons/mb_shotgun.png"
 
 SWEP.ViewModel = "models/v_shotgun_engineer.mdl"
 SWEP.WorldModel = "models/weapons/c_models/c_shotgun/c_shotgun.mdl"
